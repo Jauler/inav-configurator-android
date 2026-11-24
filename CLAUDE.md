@@ -122,6 +122,11 @@ Release signing uses `INAV_ANDROID_KEYSTORE`, `INAV_ANDROID_KEYSTORE_PASSWORD`,
 `INAV_ANDROID_KEY_ALIAS` and `INAV_ANDROID_KEY_PASSWORD`. Without them the release APK
 is signed with the local debug key (installable for testing, not for distribution).
 
+CI: `.github/workflows/android.yml` builds debug + release APKs on pull requests (debug-key
+signed, no secrets) and on manual/`workflow_call` runs, which sign with the release key when
+`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and
+`ANDROID_KEY_PASSWORD` are all set (`require_signing: true` makes a partial set fail).
+
 ## macOS Code Signing & Notarization
 
 Signing is opt-in. Without credentials, `yarn make` produces an unsigned app.

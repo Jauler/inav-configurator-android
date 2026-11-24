@@ -1,0 +1,114 @@
+name: Build Android
+# Builds the Capacitor Android app (see the "Android (Capacitor)" section in CLAUDE.md).
+#
+# Signing follows the same rules as the macOS builds in ci.yml:
+# - pull_request runs never import secrets; the release APK is signed with the
+#   runner's debug key (installable for testing, not for distribution).
+# - workflow_dispatch / workflow_call runs sign the release APK with the release
+#   keystore when ALL four ANDROID_* secrets are set; a partial set falls back to
+#   the debug key, unless require_signing is true, in which case the job fails.
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      require_signing:
+        description: 'Fail unless the release keystore secrets are complete'
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      require_signing:
+        description: 'Fail unless the release keystore secrets are complete'
+        type: boolean
+        default: false
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
+
+jobs:
+    build-android:
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup environment
+              run: |
+                COMMIT_ID=${{ github.event.pull_request.head.sha }}
+                COMMIT_ID=${COMMIT_ID:-${{ github.sha }}}
+                BUILD_SUFFIX=ci-$(date '+%Y%m%d')-$(git rev-parse --short ${COMMIT_ID})
+                VERSION=$(grep version package.json | sed 's/.*"\([0-9][0-9]*.[0-9]*.[0-9]*\)".*/\1/g')
+                echo "BUILD_NAME=inav-configurator_android_${VERSION}_${BUILD_SUFFIX}" >> $GITHUB_ENV
+            - uses: actions/setup-node@v4
+              with:
+                node-version: 22
+            - uses: actions/setup-java@v4
+              with:
+                distribution: temurin
+                java-version: 21
+                cache: gradle
+            - name: Install Android SDK platform
+              # Licenses are pre-accepted on GitHub's Ubuntu images.
+              run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36"'
+            - name: Install system dependencies
+              # Native modules (serialport, usb) are built on yarn install even though
+              # the Android app does not use them.
+              run: sudo apt-get update && sudo apt-get -y install build-essential libudev-dev
+            - name: Install deps
+              uses: nick-fields/retry@v3
+              with:
+                max_attempts: 3
+                retry_on: error
+                command: yarn install
+                timeout_minutes: 10
+                on_retry_command: rm -rfv node_modules
+            - name: Run tests
+              run: yarn test
+            - name: Build web bundle and sync Capacitor
+              run: yarn android:sync
+            - name: Import release keystore
+              if: github.event_name != 'pull_request'
+              env:
+                KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+                KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+                KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+                KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+                REQUIRE_SIGNING: ${{ inputs.require_signing }}
+              run: |
+                if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+                  KEYSTORE="$RUNNER_TEMP/inav-release.keystore"
+                  echo "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+                  {
+                    echo "INAV_ANDROID_KEYSTORE=$KEYSTORE"
+                    echo "INAV_ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+                    echo "INAV_ANDROID_KEY_ALIAS=$KEY_ALIAS"
+                    echo "INAV_ANDROID_KEY_PASSWORD=$KEY_PASSWORD"
+                  } >> $GITHUB_ENV
+                  echo "Release keystore imported."
+                elif [ "$REQUIRE_SIGNING" = "true" ]; then
+                  echo "::error::Android release signing secrets are incomplete."
+                  exit 1
+                else
+                  echo "::warning::Android release signing secrets are incomplete; signing with the debug key."
+                fi
+            - name: Build APKs
+              working-directory: android
+              run: ./gradlew assembleDebug assembleRelease --no-daemon
+            - name: Rename APKs
+              run: |
+                mkdir -p dist-android
+                cp android/app/build/outputs/apk/release/app-release.apk "dist-android/${BUILD_NAME}.apk"
+                cp android/app/build/outputs/apk/debug/app-debug.apk "dist-android/${BUILD_NAME}_debug.apk"
+            - name: Remove release keystore
+              if: always()
+              run: rm -f "$RUNNER_TEMP/inav-release.keystore"
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: ${{ env.BUILD_NAME }}
+                path: dist-android/*.apk
+                if-no-files-found: error
