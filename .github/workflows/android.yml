@@ -1,7 +1,7 @@
 name: Build Android
 # Builds the Capacitor Android app (see the "Android (Capacitor)" section in CLAUDE.md).
 #
-# Signing follows the same rules as the macOS builds in ci.yml:
+# Signing rules:
 # - pull_request runs never import secrets; the release APK is signed with the
 #   runner's debug key (installable for testing, not for distribution).
 # - workflow_dispatch / workflow_call runs sign the release APK with the release

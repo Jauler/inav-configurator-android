@@ -129,6 +129,10 @@ signed, no secrets) and on manual/`workflow_call` runs, which sign with the rele
 
 ## macOS Code Signing & Notarization
 
+> **Note:** this branch only keeps the Android workflow (`.github/workflows/android.yml`).
+> The desktop CI workflows referenced below (`ci.yml`, `nightly-build.yml`, `release.yml`)
+> live in the upstream repository, https://github.com/iNavFlight/inav-configurator.
+
 Signing is opt-in. Without credentials, `yarn make` produces an unsigned app.
 
 ### What gets signed
