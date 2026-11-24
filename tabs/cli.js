@@ -14,6 +14,7 @@ import mspDeduplicationQueue from './../js/msp/mspDeduplicationQueue';
 import FC from './../js/fc';
 import { generateFilename } from './../js/helpers';
 import dialog from '../js/dialog';
+import platform from './../js/platform';
 
 const cliTab = {
     outputHistory: "",
@@ -196,7 +197,7 @@ cliTab.initialize = function (callback) {
                     return;
                 }
 
-                window.electronAPI.writeFile(result.filePath, self.outputHistory).then(err => {
+                platform.writeFile(result.filePath, self.outputHistory).then(err => {
                     if (err) {
                         GUI.log(i18n.getMessage('ErrorWritingFile'));
                         return console.error(err);
@@ -280,7 +281,7 @@ cliTab.initialize = function (callback) {
                 }
 
                 if (result.filePaths.length == 1) {
-                    window.electronAPI.readFile(result.filePaths[0]).then(response => {
+                    platform.readFile(result.filePaths[0]).then(response => {
                         if (response.error) {
                             GUI.log(i18n.getMessage('ErrorReadingFile'));
                             console.error(response.error);

@@ -5,6 +5,7 @@ import semver from 'semver';
 import GUI from './gui';
 import jBox from 'jbox';
 import i18n from './localization';
+import platform from './platform';
 
 var appUpdater = appUpdater || {};
 
@@ -24,7 +25,7 @@ appUpdater.checkRelease = function (currVersion) {
         }
 
         if (updateAvailable) {
-            window.electronAPI.appGetVersion().then(currentVersion => {
+            Promise.resolve(platform.appGetVersion()).then(currentVersion => {
                 GUI.log(newVersion, currentVersion);
                 GUI.log(currVersion);
 

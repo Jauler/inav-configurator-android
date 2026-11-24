@@ -10,6 +10,7 @@ import features from './../js/feature_framework';
 import i18n from './../js/localization';
 import BitHelper from './../js/bitHelper';
 import dialog from './../js/dialog';
+import platform from './../js/platform';
 
 var sdcardTimer;
 
@@ -368,7 +369,7 @@ onboardLoggingTab.initialize = function (callback) {
 
                                 $(".dataflash-saving progress").attr("value", nextAddress / maxBytes * 100);
 
-                                window.electronAPI.appendFile(filename, new Uint8Array(chunk))
+                                platform.appendFile(filename, new Uint8Array(chunk))
                                     .then(() => {
                                         if (saveCancelled) {
                                             dismiss_saving_dialog();

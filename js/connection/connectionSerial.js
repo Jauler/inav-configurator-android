@@ -3,6 +3,7 @@
 import GUI from './../gui';
 import { ConnectionType, Connection } from './connection';
 import i18n from './../localization';
+import platform from './../platform';
 
 const serialDevices = [
     { vendorId: 1027, productId: 24577 }, // FT232R USB UART
@@ -35,19 +36,19 @@ class ConnectionSerial extends Connection {
             return; // Already registered
         }
 
-        this._ipcDataHandler = window.electronAPI.onSerialData(buffer => {
+        this._ipcDataHandler = platform.onSerialData(buffer => {
             this.notifyReceiveListeners({
                 connectionId: this._connectionId,
                 data: buffer
             });
         });
 
-        this._ipcCloseHandler = window.electronAPI.onSerialClose(() => {
+        this._ipcCloseHandler = platform.onSerialClose(() => {
             console.log("Serial connection closed");
             this.abort();
         });
 
-        this._ipcErrorHandler = window.electronAPI.onSerialError(error => {
+        this._ipcErrorHandler = platform.onSerialError(error => {
             GUI.log(error);
             console.log(error);
             this.abort();
@@ -58,15 +59,15 @@ class ConnectionSerial extends Connection {
 
     removeIpcListeners() {
         if (this._ipcDataHandler) {
-            window.electronAPI.offSerialData(this._ipcDataHandler);
+            platform.offSerialData(this._ipcDataHandler);
             this._ipcDataHandler = null;
         }
         if (this._ipcCloseHandler) {
-            window.electronAPI.offSerialClose(this._ipcCloseHandler);
+            platform.offSerialClose(this._ipcCloseHandler);
             this._ipcCloseHandler = null;
         }
         if (this._ipcErrorHandler) {
-            window.electronAPI.offSerialError(this._ipcErrorHandler);
+            platform.offSerialError(this._ipcErrorHandler);
             this._ipcErrorHandler = null;
         }
     }
@@ -74,7 +75,7 @@ class ConnectionSerial extends Connection {
     connectImplementation(path, options, callback) {
         this.registerIpcListeners();
 
-        window.electronAPI.serialConnect(path, options).then(response => {
+        platform.serialConnect(path, options).then(response => {
             if (!response.error) {
                 GUI.log(i18n.getMessage('connectionConnected', [`${path} @ ${options.bitrate} baud`]));
                 this._connectionId = response.id;
@@ -94,11 +95,11 @@ class ConnectionSerial extends Connection {
     }
 
     disconnectImplementation(callback) {
-        this.completeClose('serial', this._connectionId ? window.electronAPI.serialClose() : null, callback);
+        this.completeClose('serial', this._connectionId ? platform.serialClose() : null, callback);
     }
 
     sendImplementation(data, callback) {
-        this.completeSend('Serial', this._connectionId ? window.electronAPI.serialSend(data) : null, callback);
+        this.completeSend('Serial', this._connectionId ? platform.serialSend(data) : null, callback);
     }
 
     addOnReceiveCallback(callback){
@@ -118,7 +119,7 @@ class ConnectionSerial extends Connection {
     } 
 
     static async getDevices() {
-        return window.electronAPI.listSerialDevices();
+        return platform.listSerialDevices();
     }
 }
 

@@ -11,7 +11,13 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",
-    "test": "node tests/transpiler/run_all_tests.cjs && node --test tests/*.test.mjs tests/transpiler/*.test.mjs"
+    "test": "node tests/transpiler/run_all_tests.cjs && node --test tests/*.test.mjs tests/transpiler/*.test.mjs",
+    "android:build-web": "vite build --config vite.web.config.js",
+    "android:sync": "yarn android:build-web && cap sync android",
+    "android:open": "yarn android:sync && cap open android",
+    "android:apk": "yarn android:sync && cd android && ./gradlew assembleDebug",
+    "android:apk-release": "yarn android:sync && cd android && ./gradlew assembleRelease",
+    "android:run": "yarn android:sync && cap run android"
   },
   "repository": {
     "type": "git",
@@ -20,6 +26,7 @@
   "author": "The INAV open source project",
   "license": "GPL-3.0",
   "dependencies": {
+    "@capacitor/core": "8.5.2",
     "@electron/remote": "^2.1.3",
     "acorn": "^8.14.0",
     "browserify-fs": "^1.0.0",
@@ -53,6 +60,8 @@
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/cli": "8.5.2",
     "@electron-forge/cli": "7.8.3",
     "@electron-forge/maker-deb": "^7.8.3",
     "@electron-forge/maker-dmg": "^7.8.3",

@@ -52,6 +52,7 @@ import onboardLoggingTab from  './../tabs/onboard_logging';
 import cliTab from './../tabs/cli';
 import searchTab from './../tabs/search';
 import dialog from './dialog'
+import platform, { isAndroid } from './platform';
 
 window.$ = $;
 
@@ -92,10 +93,14 @@ $(function() {
             globalSettings.osdUnits = null;
         }
 
-        const version = window.electronAPI.appGetVersion();
+        const version = platform.appGetVersion();
         // alternative - window.navigator.appVersion.match(/Chrome\/([0-9.]*)/)[1];
+        const electronVersion = navigator.userAgent.match(/Electron\/([\d\.]+\d+)/);
+        const runtimeInfo = electronVersion
+            ? 'Electron: <strong>' + electronVersion[1] + '</strong>, '
+            : 'WebView: <strong>' + ((navigator.userAgent.match(/Chrome\/([\d\.]+)/) || [])[1] || 'unknown') + '</strong>, ';
         GUI.log(i18n.getMessage('getRunningOS') + GUI.operating_system + '</strong>, ' +
-            'Electron: <strong>' + navigator.userAgent.match(/Electron\/([\d\.]+\d+)/)[1] + '</strong>, ' +
+            runtimeInfo +
             i18n.getMessage('getConfiguratorVersion') + version + '</strong>');
 
         $('#status-bar .version').text(version);
@@ -106,7 +111,13 @@ $(function() {
             $("#showlog").trigger('click');
         }
 
-        if (store.get('update_notify', true)) { 
+        // Local SITL needs to spawn native processes, which Android cannot do.
+        if (isAndroid) {
+            $('#tabs li.tab_sitl').remove();
+        }
+
+        // Release downloads are desktop packages; the Android build is installed separately.
+        if (store.get('update_notify', true) && !isAndroid) {
             appUpdater.checkRelease(version);
         }
         

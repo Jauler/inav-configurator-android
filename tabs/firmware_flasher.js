@@ -24,6 +24,7 @@ import dialog from '../js/dialog.js';
 import BackupRestore from './../js/backup_restore';
 import MigrationHandler from './../js/migration/migration_handler';
 import { FlashRestoreFlow, showMigrationPreview, prepareRestoreData, executeRestore } from './firmware_flasher_restore';
+import platform from './../js/platform';
 
 const firmwareFlasherTab = {};
 
@@ -442,7 +443,7 @@ firmwareFlasherTab.initialize = function (callback) {
 
                 console.log('Loading file from: ' + filename);
 
-                window.electronAPI.readFile(filename).then(response => {
+                platform.readFile(filename).then(response => {
 
                     if (response.error) {
                         console.log("Error loading local file", response.erroe);
@@ -756,8 +757,8 @@ firmwareFlasherTab.initialize = function (callback) {
                 return;
             }
 
-            var backupDir = await window.electronAPI.getBackupDir();
-            var fileResult = await window.electronAPI.showOpenDialog({
+            var backupDir = await platform.getBackupDir();
+            var fileResult = await platform.showOpenDialog({
                 defaultPath: backupDir,
                 filters: [
                     { name: 'CLI/TXT', extensions: ['cli', 'txt'] },
@@ -771,7 +772,7 @@ firmwareFlasherTab.initialize = function (callback) {
                 return;
             }
 
-            var fileResponse = await window.electronAPI.readFile(fileResult.filePaths[0]);
+            var fileResponse = await platform.readFile(fileResult.filePaths[0]);
             if (fileResponse.error) {
                 GUI.log(i18n.getMessage('backupRestoreRestoreFailed'));
                 $('span.progressLabel').text(i18n.getMessage('backupRestoreRestoreFailed'));
@@ -860,7 +861,7 @@ firmwareFlasherTab.initialize = function (callback) {
 
         $('a.open_backups_folder').on('click', function (e) {
             e.preventDefault();
-            window.electronAPI.openBackupDir();
+            platform.openBackupDir();
         });
 
         $(document).on('click', 'span.progressLabel a.save_firmware', function () {

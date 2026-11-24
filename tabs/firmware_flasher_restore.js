@@ -9,6 +9,7 @@ import CONFIGURATOR from '../js/data_storage';
 import GUI from '../js/gui';
 import FC from '../js/fc';
 import ConnectionSerial from '../js/connection/connectionSerial';
+import platform from './../js/platform';
 
 /**
  * Manages the post-flash restore UI flow for the Firmware Flasher tab.
@@ -185,7 +186,7 @@ export class FlashRestoreFlow {
         );
         $('.open_backup_dir').on('click', function(e) {
             e.preventDefault();
-            window.electronAPI.openBackupDir();
+            platform.openBackupDir();
         });
     }
 }

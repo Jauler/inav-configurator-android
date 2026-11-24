@@ -1,6 +1,7 @@
 'use strict'
 
 import GUI from './gui';
+import platform from './platform';
 
 const serialRXProtocolls = [
 {
@@ -51,7 +52,7 @@ var SitlSerialPortUtils = {
     },
 
     getDevices: function(callback) {
-        window.electronAPI.listSerialDevices().then(devices => callback(devices));
+        platform.listSerialDevices().then(devices => callback(devices));
     },
 
     pollSerialPorts: function(callback) {
@@ -97,7 +98,7 @@ var SITLProcess = {
     isRunning: false,
 
     deleteEepromFile(filename) {
-        window.electronAPI.rm(`${window.electronAPI.appGetPath('userData')}/${filename}`).then(error => {
+        platform.rm(`${platform.appGetPath('userData')}/${filename}`).then(error => {
             if (error) {
                 GUI.log(`Unable to reset Demo mode: ${error}`);
             }
@@ -110,21 +111,21 @@ var SITLProcess = {
             this.stop();
 
         var sitlExePath, eepromPath;
-        var path = window.electronAPI.appGetPath('userData');
+        var path = platform.appGetPath('userData');
         if (GUI.operating_system == 'Windows') {
             sitlExePath = '/windows/inav_SITL.exe';
             eepromPath = `${path}\\${eepromFileName}`
         } else if (GUI.operating_system == 'Linux') {
             sitlExePath = '/linux/inav_SITL';
             eepromPath = `${path}/${eepromFileName}`
-            window.electronAPI.chmod(sitlExePath, 0o755).then(err => {
+            platform.chmod(sitlExePath, 0o755).then(err => {
                 if (err)
                     console.log(err);
             });
         } else if (GUI.operating_system == 'MacOS') {
             sitlExePath = '/macos/inav_SITL';
             eepromPath = `${path}/${eepromFileName}`
-            window.electronAPI.chmod(sitlExePath, 0o755).then(err => {
+            platform.chmod(sitlExePath, 0o755).then(err => {
                 if (err)
                     console.log(err);
             });
@@ -187,7 +188,7 @@ var SITLProcess = {
         if (GUI.operating_system == 'Linux')
             opts = { useShell: true };
 
-        window.electronAPI.startChildProcess(path, args, opts);
+        platform.startChildProcess(path, args, opts);
 
         if (this.processHandle == -1) {
             this.isRunning = false;
@@ -200,7 +201,7 @@ var SITLProcess = {
     stop: function() {
         if (this.isRunning) {
             this.isRunning = false;
-            window.electronAPI.killChildProcess();
+            platform.killChildProcess();
         }
     }
 };

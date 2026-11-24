@@ -46,6 +46,13 @@ const mockI18nUrl = dataModule(`
     export default i18n;
 `);
 
+// js/platform resolves to window.electronAPI on desktop. The tests swap
+// global.window per case, so look the stub up lazily on every access.
+const mockPlatformUrl = dataModule(`
+    const platform = new Proxy({}, { get: (_target, key) => globalThis.window.electronAPI[key] });
+    export default platform;
+`);
+
 const realConnectionUrl = rewriteAndWrite('js/connection/connection.js', [
     [/^import GUI from '\.\/\.\.\/gui';$/m, `import GUI from '${mockGuiUrl}';`, "import GUI"],
 ], 'connection-generated');
@@ -54,6 +61,7 @@ const realConnectionSerialUrl = rewriteAndWrite('js/connection/connectionSerial.
     [/^import GUI from '\.\/\.\.\/gui';$/m, `import GUI from '${mockGuiUrl}';`, "import GUI"],
     [/^import \{ ConnectionType, Connection \} from '\.\/connection';$/m, `import { ConnectionType, Connection } from '${realConnectionUrl}';`, "import Connection"],
     [/^import i18n from '\.\/\.\.\/localization';$/m, `import i18n from '${mockI18nUrl}';`, "import i18n"],
+    [/^import platform from '\.\/\.\.\/platform';$/m, `import platform from '${mockPlatformUrl}';`, "import platform"],
 ], 'connectionSerial-generated');
 
 const { default: ConnectionSerial } = await import(realConnectionSerialUrl);

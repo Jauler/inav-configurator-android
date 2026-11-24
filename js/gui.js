@@ -59,7 +59,8 @@ var GUI_control = function () {
     };
 
     // check which operating system is user running
-    if (navigator.appVersion.indexOf("Win") != -1)          this.operating_system = "Windows";
+    if (navigator.userAgent.indexOf("Android") != -1)       this.operating_system = "Android";
+    else if (navigator.appVersion.indexOf("Win") != -1)     this.operating_system = "Windows";
     else if (navigator.appVersion.indexOf("Mac") != -1)     this.operating_system = "MacOS";
     else if (navigator.appVersion.indexOf("CrOS") != -1)    this.operating_system = "ChromeOS";
     else if (navigator.appVersion.indexOf("Linux") != -1)   this.operating_system = "Linux";

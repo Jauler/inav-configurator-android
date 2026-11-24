@@ -4,6 +4,7 @@ import  { ConnectionType, Connection } from './connection';
 
 import GUI from './../gui';
 import i18n from './../localization';
+import platform from './../platform';
 
 const STANDARD_UDP_PORT = 5761;
 
@@ -28,14 +29,14 @@ class ConnectionUdp extends Connection {
             return; // Already registered
         }
 
-        this._ipcMessageHandler = window.electronAPI.onUdpMessage(message => {
+        this._ipcMessageHandler = platform.onUdpMessage(message => {
             this.notifyReceiveListeners({
                 connectionId: this._connectionId,
                 data: message
             });
         });
 
-        this._ipcErrorHandler = window.electronAPI.onUdpError(error => {
+        this._ipcErrorHandler = platform.onUdpError(error => {
             GUI.log(error);
             console.log(error);
             this.abort();
@@ -45,11 +46,11 @@ class ConnectionUdp extends Connection {
 
     removeIpcListeners() {
         if (this._ipcMessageHandler) {
-            window.electronAPI.offUdpMessage(this._ipcMessageHandler);
+            platform.offUdpMessage(this._ipcMessageHandler);
             this._ipcMessageHandler = null;
         }
         if (this._ipcErrorHandler) {
-            window.electronAPI.offUdpError(this._ipcErrorHandler);
+            platform.offUdpError(this._ipcErrorHandler);
             this._ipcErrorHandler = null;
         }
     }
@@ -66,7 +67,7 @@ class ConnectionUdp extends Connection {
             this._connectionPort = STANDARD_UDP_PORT;
         } 
 
-        window.electronAPI.udpConnect(this._connectionIP, this._connectionPort).then(response => {
+        platform.udpConnect(this._connectionIP, this._connectionPort).then(response => {
             if (!response.error) {
                 GUI.log(i18n.getMessage('connectionConnected', ["udp://" + this._connectionIP + ":" + this._connectionPort]));
                 this._connectionId = response.id;
@@ -86,11 +87,11 @@ class ConnectionUdp extends Connection {
     }
 
     disconnectImplementation(callback) {
-        this.completeClose('UDP', this._connectionId ? window.electronAPI.udpClose() : null, callback);
+        this.completeClose('UDP', this._connectionId ? platform.udpClose() : null, callback);
     }
 
     sendImplementation(data, callback) {
-        this.completeSend('UDP', this._connectionId ? window.electronAPI.udpSend(data) : null, callback);
+        this.completeSend('UDP', this._connectionId ? platform.udpSend(data) : null, callback);
     }
 
     addOnReceiveCallback(callback){

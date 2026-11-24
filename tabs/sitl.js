@@ -7,6 +7,7 @@ import i18n from './../js/localization';
 import { SITLProcess, SitlSerialPortUtils } from './../js/sitl';
 import store from './../js/store';
 import dialog from '../js/dialog';
+import platform from './../js/platform';
 
 const localhost = "127.0.0.1"
 
@@ -363,15 +364,15 @@ sitlTab.initialize = (callback) => {
             currentProfile.parity = parity_e.val();
         });
 
-        window.electronAPI.onChildProcessStdout(data => {
+        platform.onChildProcessStdout(data => {
             appendLog(data);
         });
 
-        window.electronAPI.onChildProcessStderr(data => {
+        platform.onChildProcessStderr(data => {
             appendLog(data);
         });
 
-        window.electronAPI.onChildProcessError(error => {
+        platform.onChildProcessError(error => {
             SITLProcess.stop();
             appendLog(error);
         });

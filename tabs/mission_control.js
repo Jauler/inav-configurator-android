@@ -60,6 +60,7 @@ import store from './../js/store';
 import dialog from '../js/dialog';
 
 import html from'./mission_control.html?raw';
+import platform from './../js/platform';
 
 function extractKmlFromKmz(source) {
     const data = source instanceof Uint8Array ? source : new Uint8Array(source);
@@ -1652,7 +1653,7 @@ function iconKey(filename) {
         const fileName = filePath.split('/').pop().split('\\').pop();
         const ext = fileName.split('.').pop().toLowerCase();
 
-        const response = await globalThis.electronAPI.readFile(filePath, ext === 'kmz' ? null : undefined);
+        const response = await platform.readFile(filePath, ext === 'kmz' ? null : undefined);
         if (response.error) {
             GUI.log(`Error reading file: ${response.error}`);
             dialog.alert(i18n.getMessage('layerLoadError'));
@@ -4231,7 +4232,7 @@ function iconKey(filename) {
             FC.FW_APPROACH.clean(i);
         }
 
-        window.electronAPI.readFile(filename).then(async response => {
+        platform.readFile(filename).then(async response => {
             if (response.error) {
                 GUI.log(i18n.getMessage('errorReadingFile'));
                 console.error(response.error);
@@ -4481,7 +4482,7 @@ function iconKey(filename) {
         var xml = builder.buildObject(data);
         xml = xml.replace(/missionitem mission/g, 'meta mission');
 
-        window.electronAPI.writeFile(filename, xml).then((err) => {
+        platform.writeFile(filename, xml).then((err) => {
             if (err) {
                 GUI.log(i18n.getMessage('ErrorWritingFile'));
                 return console.error(err);

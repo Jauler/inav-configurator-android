@@ -3,6 +3,7 @@
 import GUI from './../gui';
 import  { ConnectionType, Connection } from './connection';
 import i18n from './../localization';
+import platform from './../platform';
 
 const STANDARD_TCP_PORT = 5761;
 
@@ -26,19 +27,19 @@ class ConnectionTcp extends Connection {
             return; // Already registered
         }
 
-        this._ipcDataHandler = window.electronAPI.onTcpData(buffer => {
+        this._ipcDataHandler = platform.onTcpData(buffer => {
             this.notifyReceiveListeners({
                 connectionId: this._connectionId,
                 data: buffer
             });
         });
 
-        this._ipcEndHandler = window.electronAPI.onTcpEnd(() => {
+        this._ipcEndHandler = platform.onTcpEnd(() => {
             console.log("TCP Remote has closed the connection");
             this.abort();
         });
 
-        this._ipcErrorHandler = window.electronAPI.onTcpError(error => {
+        this._ipcErrorHandler = platform.onTcpError(error => {
             GUI.log(error);
             console.log(error);
             this.abort();
@@ -48,15 +49,15 @@ class ConnectionTcp extends Connection {
 
     removeIpcListeners() {
         if (this._ipcDataHandler) {
-            window.electronAPI.offTcpData(this._ipcDataHandler);
+            platform.offTcpData(this._ipcDataHandler);
             this._ipcDataHandler = null;
         }
         if (this._ipcEndHandler) {
-            window.electronAPI.offTcpEnd(this._ipcEndHandler);
+            platform.offTcpEnd(this._ipcEndHandler);
             this._ipcEndHandler = null;
         }
         if (this._ipcErrorHandler) {
-            window.electronAPI.offTcpError(this._ipcErrorHandler);
+            platform.offTcpError(this._ipcErrorHandler);
             this._ipcErrorHandler = null;
         }
     }
@@ -73,7 +74,7 @@ class ConnectionTcp extends Connection {
             this._connectionPort = STANDARD_TCP_PORT;
         } 
 
-        window.electronAPI.tcpConnect(this._connectionIP, this._connectionPort).then(response => {
+        platform.tcpConnect(this._connectionIP, this._connectionPort).then(response => {
             if (!response.error) {
                 GUI.log(i18n.getMessage('connectionConnected', ["tcp://" + this._connectionIP + ":" + this._connectionPort]));
                 this._connectionId = response.id;
@@ -95,7 +96,7 @@ class ConnectionTcp extends Connection {
     disconnectImplementation(callback) {
         
         if (this._connectionId) {
-            window.electronAPI.tcpClose();
+            platform.tcpClose();
         }
 
         this._connectionIP = "";
@@ -107,7 +108,7 @@ class ConnectionTcp extends Connection {
     }
 
     sendImplementation(data, callback) {
-        this.completeSend('TCP', this._connectionId ? window.electronAPI.tcpSend(data) : null, callback);
+        this.completeSend('TCP', this._connectionId ? platform.tcpSend(data) : null, callback);
     }
 
     addOnReceiveCallback(callback){

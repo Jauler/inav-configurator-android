@@ -228,6 +228,13 @@ const mockDialogUrl = dataModule(`
     export default dialog;
 `);
 
+// The CLI tab only touches js/platform when saving/loading files, which these
+// tests never do.
+const mockPlatformUrl = dataModule(`
+    const platform = {};
+    export default platform;
+`);
+
 /**
  * Replace the first line matching `regex` with `replacement`. Throws if no
  * line matches, so a future edit to the import lines we depend on fails the
@@ -268,6 +275,7 @@ function buildExecutableCliTabModule(tmpDir) {
         [/^import FC from '\.\/\.\.\/js\/fc';$/m, `import FC from '${mockFcUrl}';`, "import FC"],
         [/^import \{ generateFilename \} from '\.\/\.\.\/js\/helpers';$/m, `import { generateFilename } from '${mockHelpersUrl}';`, "import generateFilename"],
         [/^import dialog from '\.\.\/js\/dialog';$/m, `import dialog from '${mockDialogUrl}';`, "import dialog"],
+        [/^import platform from '\.\/\.\.\/js\/platform';$/m, `import platform from '${mockPlatformUrl}';`, "import platform"],
         // The one Vite-only asset import: Node cannot resolve `.html` specifiers
         // (verified: even node:test's experimental module mocking cannot
         // intercept this, since format detection on the real .html extension

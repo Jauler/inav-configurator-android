@@ -6,6 +6,7 @@ import FC from './fc';
 import i18n from './localization';
 import semver from 'semver';
 import MigrationHandler from './migration/migration_handler';
+import platform from './platform';
 
 const BACKUP_TIMEOUT_MS = 15000;
 const CLI_ENTER_TIMEOUT_MS = 3000;
@@ -196,14 +197,14 @@ const BackupRestore = {
 
         if (onProgress) onProgress('backupRestoreStatusSavingFile');
 
-        const backupDir = await window.electronAPI.getBackupDir();
+        const backupDir = await platform.getBackupDir();
         const filename = this.generateBackupFilename();
         const filePath = backupDir + '/' + filename;
 
         const header = `# INAV Backup\n# Version: ${version}\n# Board: ${FC.CONFIG.target || FC.CONFIG.boardIdentifier}\n# Date: ${new Date().toISOString()}\n# Craft: ${FC.CONFIG.name || ''}\n#\n`;
         const fileContent = header + cleanedOutput;
 
-        const err = await window.electronAPI.writeFile(filePath, fileContent);
+        const err = await platform.writeFile(filePath, fileContent);
         if (err) {
             throw new Error('Failed to write backup file: ' + err);
         }
@@ -227,10 +228,10 @@ const BackupRestore = {
         }
 
         const version = FC.CONFIG.flightControllerVersion;
-        const backupDir = await window.electronAPI.getBackupDir();
+        const backupDir = await platform.getBackupDir();
         const filename = this.generateBackupFilename();
 
-        const result = await window.electronAPI.showSaveDialog({
+        const result = await platform.showSaveDialog({
             defaultPath: backupDir + '/' + filename,
             filters: [
                 { name: 'TXT', extensions: ['txt'] },
@@ -256,7 +257,7 @@ const BackupRestore = {
         const header = `# INAV Backup\n# Version: ${version}\n# Board: ${FC.CONFIG.target || FC.CONFIG.boardIdentifier}\n# Date: ${new Date().toISOString()}\n# Craft: ${FC.CONFIG.name || ''}\n#\n`;
         const fileContent = header + cleanedOutput;
 
-        const err = await window.electronAPI.writeFile(result.filePath, fileContent);
+        const err = await platform.writeFile(result.filePath, fileContent);
         if (err) {
             throw new Error('Failed to write backup file: ' + err);
         }
@@ -353,9 +354,9 @@ const BackupRestore = {
             throw new Error('Not connected to flight controller');
         }
 
-        const backupDir = await window.electronAPI.getBackupDir();
+        const backupDir = await platform.getBackupDir();
 
-        const result = await window.electronAPI.showOpenDialog({
+        const result = await platform.showOpenDialog({
             defaultPath: backupDir,
             filters: [
                 { name: 'CLI/TXT', extensions: ['cli', 'txt'] },
@@ -368,7 +369,7 @@ const BackupRestore = {
             return false;
         }
 
-        const response = await window.electronAPI.readFile(result.filePaths[0]);
+        const response = await platform.readFile(result.filePaths[0]);
         if (response.error) {
             throw new Error('Failed to read backup file');
         }
@@ -495,14 +496,14 @@ const BackupRestore = {
 
     async _saveAutoBackup(cleanedOutput) {
         const version = FC.CONFIG.flightControllerVersion || 'unknown';
-        const backupDir = await window.electronAPI.getBackupDir();
+        const backupDir = await platform.getBackupDir();
         const filename = this.generateBackupFilename('UPDATE_');
         const filePath = backupDir + '/' + filename;
 
         const header = `# INAV Auto-Backup (pre-flash)\n# Version: ${version}\n# Board: ${FC.CONFIG.target || FC.CONFIG.boardIdentifier || 'unknown'}\n# Date: ${new Date().toISOString()}\n# Craft: ${FC.CONFIG.name || ''}\n#\n`;
         const fileContent = header + cleanedOutput;
 
-        const err = await window.electronAPI.writeFile(filePath, fileContent);
+        const err = await platform.writeFile(filePath, fileContent);
         if (err) {
             throw new Error('Failed to write backup file: ' + err);
         }
@@ -516,7 +517,7 @@ const BackupRestore = {
         const AUTO_BACKUP_PATTERN = /^UPDATE_inav_backup_.*_\d{4}-\d{2}-\d{2}_\d{6}\.txt$/;
 
         try {
-            const allFiles = await window.electronAPI.listBackups();
+            const allFiles = await platform.listBackups();
             const autoBackups = allFiles
                 .filter(f => AUTO_BACKUP_PATTERN.test(f))
                 .sort(function(a, b) {
@@ -528,7 +529,7 @@ const BackupRestore = {
             if (autoBackups.length > maxKeep) {
                 const toDelete = autoBackups.slice(0, autoBackups.length - maxKeep);
                 for (const file of toDelete) {
-                    await window.electronAPI.rm(backupDir + '/' + file);
+                    await platform.rm(backupDir + '/' + file);
                 }
                 console.log(`Pruned ${toDelete.length} old auto-backup(s)`);
             }

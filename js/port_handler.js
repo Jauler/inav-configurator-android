@@ -3,6 +3,7 @@
 import GUI from './../js/gui';
 import ConnectionSerial from './connection/connectionSerial';
 import store from './store';
+import { isAndroid } from './platform';
 
 var usbDevices =  [
     { 'vendorId': 1155, 'productId': 57105}, 
@@ -167,6 +168,13 @@ PortHandler.check = function () {
 PortHandler.check_usb_devices = function (callback) {
     
     self.dfu_available = false;
+
+    // WebUSB is not available in every host (e.g. the Android WebView).
+    if (!navigator.usb) {
+        if (callback)
+            callback(false);
+        return;
+    }
     
     navigator.usb.getDevices().then(devices => {
         devices.forEach(device  => {
@@ -202,11 +210,16 @@ PortHandler.update_port_select = function (ports) {
     }
 
     $('div#port-picker #port').append($("<option/>", {value: 'manual', text: 'Manual Selection', data: {isManual: true}}));
-    $('div#port-picker #port').append($("<option/>", {value: 'ble', text: 'BLE', data: {isBle: true}}));
+    // BLE and local SITL are not implemented on Android yet.
+    if (!isAndroid) {
+        $('div#port-picker #port').append($("<option/>", {value: 'ble', text: 'BLE', data: {isBle: true}}));
+    }
     $('div#port-picker #port').append($("<option/>", {value: 'tcp', text: 'TCP', data: {isTcp: true}}));
     $('div#port-picker #port').append($("<option/>", {value: 'udp', text: 'UDP', data: {isUdp: true}}));
-    $('div#port-picker #port').append($("<option/>", {value: 'sitl', text: 'SITL', data: {isSitl: true}}));
-    $('div#port-picker #port').append($("<option/>", {value: 'sitl-demo', text: 'Demo mode', data: {isSitl: true}}));
+    if (!isAndroid) {
+        $('div#port-picker #port').append($("<option/>", {value: 'sitl', text: 'SITL', data: {isSitl: true}}));
+        $('div#port-picker #port').append($("<option/>", {value: 'sitl-demo', text: 'Demo mode', data: {isSitl: true}}));
+    }
 };
 
 PortHandler.port_detected = function(name, code, timeout, ignore_timeout) {

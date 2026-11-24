@@ -10,6 +10,7 @@ import i18n from './../js/localization';
 import { zeroPad } from './../js/helpers';
 import dialog from '../js/dialog';
 import store from './../js/store';
+import platform from './../js/platform';
 
 
 const loggingTab = {};
@@ -82,7 +83,7 @@ loggingTab.initialize = function (callback) {
                             interval.add('log_data_poll', log_data_poll, parseInt($('select.speed').val()), true); // refresh rate goes here
                             interval.add('write_data', function write_data() {
                                 if (log_buffer.length && readyToWrite) { // only execute when there is actual data to write
-                                    window.electronAPI.appendFile(loggingFileName, log_buffer.join('\n') + '\n');
+                                    platform.appendFile(loggingFileName, log_buffer.join('\n') + '\n');
                                     $('.samples').text(samples += log_buffer.length);
                                     log_buffer = [];
                                 }
