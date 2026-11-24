@@ -95,6 +95,33 @@ MSP.send_message(MSPCodes.MSP_SOME_CODE, payload, false, () => {
 | macOS    | `yarn make --platform darwin` | DMG |
 | Linux    | `yarn make --platform linux` | DEB, RPM |
 
+## Android (Capacitor) — experimental
+
+The renderer never calls Electron directly: it imports `js/platform/index.js`, which is
+`window.electronAPI` (from `js/main/preload.js`) on desktop and `js/platform/capacitor.js`
+on Android. Both expose the same method names and result shapes, so **add new host
+functionality to both** (and to `preload.js`/`main.js`).
+
+- Native plugins: `android/app/src/main/java/com/inavflight/configurator/`
+  (`InavSerial` via usb-serial-for-android, `InavTcp`, `InavUdp`, `InavFile`).
+  Binary data crosses the bridge as base64.
+- Files picked through the Android file picker are handed to callers as pseudo paths
+  `saf://<n>/<display name>` (mapped back to `content://` URIs in `capacitor.js`).
+- Not supported on Android yet: BLE, USB DFU flashing (serial-bootloader flashing goes
+  through the serial plugin), local SITL/demo mode.
+- Requires JDK 21 and Android SDK 36 (Capacitor 8).
+
+```bash
+yarn android:apk     # web build (vite.web.config.js → www/) + cap sync + debug APK
+yarn android:apk-release  # optimized (R8 + resource shrinking) release APK
+yarn android:open    # same as android:apk, then open in Android Studio
+# APKs: android/app/build/outputs/apk/{debug/app-debug,release/app-release}.apk
+```
+
+Release signing uses `INAV_ANDROID_KEYSTORE`, `INAV_ANDROID_KEYSTORE_PASSWORD`,
+`INAV_ANDROID_KEY_ALIAS` and `INAV_ANDROID_KEY_PASSWORD`. Without them the release APK
+is signed with the local debug key (installable for testing, not for distribution).
+
 ## macOS Code Signing & Notarization
 
 Signing is opt-in. Without credentials, `yarn make` produces an unsigned app.

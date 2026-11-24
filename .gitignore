@@ -22,3 +22,6 @@ eeprom.bin
 tags
 TAGS
 start-with-debugging.sh
+
+# Android (Capacitor) web bundle
+/www/

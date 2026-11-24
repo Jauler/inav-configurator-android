@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { adaptModelMaterials } from './../js/model3dMaterials';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import noUiSlider from 'nouislider';
 
@@ -844,6 +845,7 @@ magnetometerTab.initialize3D = function () {
     import(`./../resources/models/model_${model_file}.gltf`).then(({default: model}) => {
     loader.load(model, (obj) => {
             const modelScene = obj.scene;
+            adaptModelMaterials(modelScene);
             const scaleFactor = 15;
             modelScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
             modelWrapper.add(modelScene);
@@ -855,6 +857,7 @@ magnetometerTab.initialize3D = function () {
                 import(`./../resources/models/model_${name}.glb`).then(({default: magModel}) => {
                     loader.load(magModel, (obj) => {
                         const gps = obj.scene;
+                        adaptModelMaterials(gps);
                         const scaleFactor = i==0 ? 0.03 : 0.04;
                         gps.scale.set(scaleFactor, scaleFactor, scaleFactor);
                         gps.position.set(gpsOffset[0], gpsOffset[1] + 0.5, gpsOffset[2]);

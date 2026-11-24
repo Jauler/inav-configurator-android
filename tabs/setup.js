@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { adaptModelMaterials } from './../js/model3dMaterials';
 import './../js/libraries/jquery.flightindicators';
 
 import MSPChainerClass from './../js/msp/MSPchainer';
@@ -337,6 +338,7 @@ setupTab.initialize3D = function () {
     import(`./../resources/models/model_${model_file}.gltf`).then(({default: gltf}) => {
         loader.load(gltf,  (obj) =>{
             model = obj.scene;
+            adaptModelMaterials(model);
             model.scale.set(15, 15, 15);
             modelWrapper.add(model);
         });

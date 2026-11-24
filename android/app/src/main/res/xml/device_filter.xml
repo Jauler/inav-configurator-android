@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  USB devices that offer to open INAV Configurator when plugged in. Accepting
+  that prompt also grants USB permission, so no second dialog is needed.
+  Keep in sync with serialDevices in js/connection/connectionSerial.js.
+-->
+<resources>
+    <usb-device vendor-id="1027" product-id="24577" />   <!-- FTDI FT232R -->
+    <usb-device vendor-id="1155" product-id="12886" />   <!-- STM32 HID -->
+    <usb-device vendor-id="1155" product-id="14158" />   <!-- STLink VCP (NUCLEO) -->
+    <usb-device vendor-id="1155" product-id="22336" />   <!-- STM32 VCP -->
+    <usb-device vendor-id="4292" product-id="60000" />   <!-- CP210x -->
+    <usb-device vendor-id="4292" product-id="60001" />   <!-- CP210x -->
+    <usb-device vendor-id="4292" product-id="60002" />   <!-- CP210x -->
+    <usb-device vendor-id="1659" product-id="8963" />    <!-- Prolific PL2303 -->
+    <usb-device vendor-id="6790" product-id="29987" />   <!-- CH340 -->
+    <usb-device vendor-id="6790" product-id="21795" />   <!-- CH341 -->
+    <usb-device vendor-id="11836" product-id="22336" />  <!-- AT32 VCP -->
+    <usb-device vendor-id="12619" product-id="22336" />  <!-- APM32 VCP -->
+</resources>

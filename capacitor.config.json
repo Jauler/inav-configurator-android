@@ -1,0 +1,9 @@
+{
+  "appId": "com.inavflight.configurator",
+  "appName": "INAV Configurator",
+  "webDir": "www",
+  "android": {
+    "appendUserAgent": "INAV-Configurator"
+  },
+  "loggingBehavior": "none"
+}
