@@ -127,6 +127,11 @@ signed, no secrets) and on manual/`workflow_call` runs, which sign with the rele
 `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and
 `ANDROID_KEY_PASSWORD` are all set (`require_signing: true` makes a partial set fail).
 
+Releases: pushing a tag `v<package.json version>-<revision>` (e.g. `v9.1.2-1`, revision 1–99)
+builds a release-key-signed APK and publishes a GitHub Release. The revision reaches Gradle
+as `-PinavRevision` (versionName `9.1.2-1`, versionCode `9010201`) and the web bundle as
+`VITE_APP_REVISION` (version shown in the app).
+
 ## macOS Code Signing & Notarization
 
 > **Note:** this branch only keeps the Android workflow (`.github/workflows/android.yml`).

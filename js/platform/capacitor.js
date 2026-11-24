@@ -9,7 +9,12 @@
  */
 
 import { registerPlugin } from '@capacitor/core';
-import { version as appVersion } from '../../package.json';
+import { version as upstreamVersion } from '../../package.json';
+
+// Android releases are tagged v<upstream version>-<revision>; CI passes the revision
+// as VITE_APP_REVISION so the app reports e.g. 9.1.2-1.
+const appRevision = import.meta.env.VITE_APP_REVISION;
+const appVersion = appRevision ? `${upstreamVersion}-${appRevision}` : upstreamVersion;
 
 const Serial = registerPlugin('InavSerial');
 const Tcp = registerPlugin('InavTcp');

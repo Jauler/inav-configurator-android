@@ -1,14 +1,24 @@
 name: Build Android
 # Builds the Capacitor Android app (see the "Android (Capacitor)" section in CLAUDE.md).
 #
+# Triggers:
+# - pull_request: debug + release APKs as artifacts, for testing.
+# - push of a release tag vX.Y.Z-N: signed release APK, published as a GitHub Release.
+#   X.Y.Z is the upstream INAV Configurator version and must match package.json;
+#   N (1-99) is the revision of this repository's changes on top of it.
+# - workflow_dispatch / workflow_call: like pull_request, but may use the release key.
+#
 # Signing rules:
 # - pull_request runs never import secrets; the release APK is signed with the
 #   runner's debug key (installable for testing, not for distribution).
-# - workflow_dispatch / workflow_call runs sign the release APK with the release
-#   keystore when ALL four ANDROID_* secrets are set; a partial set falls back to
-#   the debug key, unless require_signing is true, in which case the job fails.
+# - Other runs sign the release APK with the release keystore when ALL four
+#   ANDROID_* secrets are set; a partial set falls back to the debug key, unless
+#   require_signing is true or a release tag is being built, in which case the job fails.
 on:
   pull_request:
+  push:
+    tags:
+      - 'v*.*.*-*'
   workflow_dispatch:
     inputs:
       require_signing:
@@ -31,18 +41,48 @@ on:
       ANDROID_KEY_PASSWORD:
         required: false
 
+permissions:
+  contents: read
+
 jobs:
     build-android:
         runs-on: ubuntu-24.04
+        outputs:
+            build_name: ${{ steps.setup.outputs.build_name }}
         steps:
             - uses: actions/checkout@v4
             - name: Setup environment
+              id: setup
               run: |
-                COMMIT_ID=${{ github.event.pull_request.head.sha }}
-                COMMIT_ID=${COMMIT_ID:-${{ github.sha }}}
-                BUILD_SUFFIX=ci-$(date '+%Y%m%d')-$(git rev-parse --short ${COMMIT_ID})
                 VERSION=$(grep version package.json | sed 's/.*"\([0-9][0-9]*.[0-9]*.[0-9]*\)".*/\1/g')
-                echo "BUILD_NAME=inav-configurator_android_${VERSION}_${BUILD_SUFFIX}" >> $GITHUB_ENV
+                if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+                  TAG="$GITHUB_REF_NAME"
+                  if [[ ! "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-([1-9][0-9]?)$ ]]; then
+                    echo "::error::Release tag '$TAG' must look like v9.1.2-1 (upstream version, then revision 1-99)."
+                    exit 1
+                  fi
+                  UPSTREAM="${BASH_REMATCH[1]}"
+                  REVISION="${BASH_REMATCH[2]}"
+                  if [ "$UPSTREAM" != "$VERSION" ]; then
+                    echo "::error::Tag '$TAG' is for upstream $UPSTREAM, but package.json says $VERSION."
+                    exit 1
+                  fi
+                  BUILD_NAME="inav-configurator_android_${TAG}"
+                else
+                  COMMIT_ID=${{ github.event.pull_request.head.sha }}
+                  COMMIT_ID=${COMMIT_ID:-${{ github.sha }}}
+                  REVISION=0
+                  BUILD_NAME="inav-configurator_android_${VERSION}_ci-$(date '+%Y%m%d')-$(git rev-parse --short ${COMMIT_ID})"
+                fi
+                {
+                  echo "BUILD_NAME=$BUILD_NAME"
+                  echo "APP_REVISION=$REVISION"
+                } >> $GITHUB_ENV
+                if [ "$REVISION" != "0" ]; then
+                  # Shown as the configurator version inside the app (js/platform/capacitor.js).
+                  echo "VITE_APP_REVISION=$REVISION" >> $GITHUB_ENV
+                fi
+                echo "build_name=$BUILD_NAME" >> $GITHUB_OUTPUT
             - uses: actions/setup-node@v4
               with:
                 node-version: 22
@@ -77,7 +117,7 @@ jobs:
                 KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
                 KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
                 KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-                REQUIRE_SIGNING: ${{ inputs.require_signing }}
+                REQUIRE_SIGNING: ${{ inputs.require_signing || github.ref_type == 'tag' }}
               run: |
                 if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
                   KEYSTORE="$RUNNER_TEMP/inav-release.keystore"
@@ -97,7 +137,16 @@ jobs:
                 fi
             - name: Build APKs
               working-directory: android
-              run: ./gradlew assembleDebug assembleRelease --no-daemon
+              run: ./gradlew assembleDebug assembleRelease --no-daemon -PinavRevision="$APP_REVISION"
+            - name: Check release signature
+              run: |
+                APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+                CERTS=$("$APKSIGNER" verify --print-certs android/app/build/outputs/apk/release/app-release.apk)
+                echo "$CERTS" | grep -E "certificate DN|SHA-256"
+                if [ "$GITHUB_REF_TYPE" = "tag" ] && echo "$CERTS" | grep -q "CN=Android Debug"; then
+                  echo "::error::Release tag build is signed with a debug key."
+                  exit 1
+                fi
             - name: Rename APKs
               run: |
                 mkdir -p dist-android
@@ -112,3 +161,38 @@ jobs:
                 name: ${{ env.BUILD_NAME }}
                 path: dist-android/*.apk
                 if-no-files-found: error
+
+    publish-release:
+        needs: build-android
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        runs-on: ubuntu-24.04
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/download-artifact@v4
+              with:
+                name: ${{ needs.build-android.outputs.build_name }}
+                path: dist
+            - name: Publish GitHub release
+              env:
+                GH_TOKEN: ${{ github.token }}
+                TAG: ${{ github.ref_name }}
+                BUILD_NAME: ${{ needs.build-android.outputs.build_name }}
+              run: |
+                cd dist
+                APK="${BUILD_NAME}.apk"
+                sha256sum "$APK" > "$APK.sha256"
+                UPSTREAM="${TAG%-*}"
+                cat > notes.md <<EOF
+                INAV Configurator for Android, based on upstream INAV Configurator [${UPSTREAM#v}](https://github.com/iNavFlight/inav-configurator/releases/tag/${UPSTREAM#v}).
+
+                Install \`$APK\` on an Android 11+ tablet. See the [README](https://github.com/${GITHUB_REPOSITORY}/blob/${TAG}/README.md) for what works and what doesn't.
+                EOF
+                if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+                  # Re-run of the workflow: replace the assets of the existing release.
+                  gh release upload "$TAG" "$APK" "$APK.sha256" --repo "$GITHUB_REPOSITORY" --clobber
+                else
+                  gh release create "$TAG" "$APK" "$APK.sha256" --repo "$GITHUB_REPOSITORY" \
+                    --verify-tag --title "INAV Configurator for Android $TAG" \
+                    --notes-file notes.md --generate-notes
+                fi

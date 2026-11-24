@@ -16,6 +16,7 @@ This is the same configurator: the unmodified desktop UI runs inside the Android
 ## Installing
 
 1. Download the APK:
+   - from the [Releases page](../../releases) (signed release builds), or
    - from the **Build Android** workflow run of a pull request (Actions → run → Artifacts), or
    - build it yourself (see [Building](#building)).
 2. Allow installing apps from unknown sources and open the APK.
@@ -97,6 +98,25 @@ APKs are written to `android/app/build/outputs/apk/{debug/app-debug,release/app-
 Release signing uses `INAV_ANDROID_KEYSTORE`, `INAV_ANDROID_KEYSTORE_PASSWORD`, `INAV_ANDROID_KEY_ALIAS` and `INAV_ANDROID_KEY_PASSWORD`. Without them, the release APK is signed with the local debug key.
 
 CI (`.github/workflows/android.yml`) builds both APKs for every pull request. Manual runs sign with the release key when the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` secrets are set.
+
+## Releases
+
+Versions are `<upstream version>-<revision>`, for example `v9.1.2-1`: `9.1.2` is the upstream INAV Configurator release this build is based on (the `version` in `package.json`), and `1` is the revision of this repository's changes on top of it (1–99, reset when moving to a new upstream version).
+
+To publish a release, tag the commit and push the tag:
+
+```bash
+git tag v9.1.2-1
+git push <remote> v9.1.2-1
+```
+
+The workflow then:
+
+1. checks that the tag matches `package.json` (a tag `v9.1.3-1` on a `9.1.2` tree fails),
+2. builds the release APK signed with the release key. Missing signing secrets fail the build instead of falling back to the debug key,
+3. publishes a GitHub Release named after the tag, with the APK and its SHA-256 checksum attached.
+
+The APK's `versionName` is `9.1.2-1` and its `versionCode` is `9010201`, so each revision installs as an update of the previous one. The app shows the same version in its log line.
 
 ## How it works
 
