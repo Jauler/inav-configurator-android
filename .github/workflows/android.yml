@@ -47,12 +47,9 @@ permissions:
 jobs:
     build-android:
         runs-on: ubuntu-24.04
-        outputs:
-            build_name: ${{ steps.setup.outputs.build_name }}
         steps:
             - uses: actions/checkout@v4
             - name: Setup environment
-              id: setup
               run: |
                 VERSION=$(grep version package.json | sed 's/.*"\([0-9][0-9]*.[0-9]*.[0-9]*\)".*/\1/g')
                 if [ "$GITHUB_REF_TYPE" = "tag" ]; then
@@ -82,7 +79,6 @@ jobs:
                   # Shown as the configurator version inside the app (js/platform/capacitor.js).
                   echo "VITE_APP_REVISION=$REVISION" >> $GITHUB_ENV
                 fi
-                echo "build_name=$BUILD_NAME" >> $GITHUB_OUTPUT
             - uses: actions/setup-node@v4
               with:
                 node-version: 22
@@ -169,18 +165,23 @@ jobs:
         permissions:
             contents: write
         steps:
+            # The artifact name is derived from the tag here rather than passed as a job
+            # output: GitHub drops outputs that contain a secret's value, and the name
+            # contains "inav", which may well be the key alias.
             - uses: actions/download-artifact@v4
               with:
-                name: ${{ needs.build-android.outputs.build_name }}
+                name: inav-configurator_android_${{ github.ref_name }}
                 path: dist
             - name: Publish GitHub release
               env:
                 GH_TOKEN: ${{ github.token }}
                 TAG: ${{ github.ref_name }}
-                BUILD_NAME: ${{ needs.build-android.outputs.build_name }}
               run: |
                 cd dist
-                APK="${BUILD_NAME}.apk"
+                APK="inav-configurator_android_${TAG}.apk"
+                if [ ! -f "$APK" ]; then
+                  echo "::error::$APK not found in the build artifact:"; ls -la; exit 1
+                fi
                 sha256sum "$APK" > "$APK.sha256"
                 UPSTREAM="${TAG%-*}"
                 cat > notes.md <<EOF
