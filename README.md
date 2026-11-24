@@ -1,172 +1,113 @@
-# INAV Configurator
+# INAV Configurator for Android
 
-INAV Configurator is a cross-platform configuration tool for the [INAV](https://github.com/iNavFlight/inav) flight control system.
+An experimental Android build of [INAV Configurator](https://github.com/iNavFlight/inav-configurator), the configuration tool for the [INAV](https://github.com/iNavFlight/inav) flight control system. It is aimed at tablets: plug the flight controller into the tablet with a USB OTG cable and configure it in the field, without a laptop.
 
-Various types of aircraft are supported by the tool and by INAV, e.g. quadcopters, hexacopters, octocopters, and fixed-wing aircraft.
+> For the desktop app (Windows, Linux, macOS), installation instructions, map providers, fonts and everything else, see the **[original INAV Configurator README](https://github.com/iNavFlight/inav-configurator/blob/master/README.md)**.
 
-# Support
+This is the same configurator: the unmodified desktop UI runs inside the Android WebView, and small native plugins provide what a browser cannot do (USB serial, TCP/UDP sockets, file access). Desktop builds are unaffected.
 
-INAV Configurator comes `as is`, without any warranty and support from the authors. If you find a bug, please create an issue on [GitHub](https://github.com/iNavFlight/inav-configurator/issues).
+## Requirements
 
-The GitHub issue tracker is reserved for bugs and other technical problems. If you do not know how to set up
-everything, the hardware is not working, or you have any other _support_ problem, please consult:
+- Android 11 or newer
+- A tablet in landscape. The UI is the desktop layout, so it needs about 1280×800 dp; phones are not a target.
+- USB host (OTG) support and a USB OTG cable for wired connections
+- An up-to-date Android System WebView is recommended. Stock Android 11 WebView (Chrome 83) is supported.
 
-* [INAV Discord Server](https://discord.gg/peg2hhbYwN)
-* [INAV Official on Facebook](https://www.facebook.com/groups/INAVOfficial)
-* [RC Groups Support](https://www.rcgroups.com/forums/showthread.php?2495732-Cleanflight-iNav-(navigation-rewrite)-project)
-* [INAV Official on Telegram](https://t.me/INAVFlight)
-* [GitHub Discussions](https://github.com/iNavFlight/inav-configurator/discussions)
+## Installing
 
-## Installation
+1. Download the APK:
+   - from the **Build Android** workflow run of a pull request (Actions → run → Artifacts), or
+   - build it yourself (see [Building](#building)).
+2. Allow installing apps from unknown sources and open the APK.
+3. Plug in the flight controller. Android offers to open INAV Configurator for it; accepting also grants USB access. Otherwise the app asks for permission when you press **Connect**.
 
- _INAV Configurator_ is distributed as a _standalone_ application.
+CI and local builds without a release key are signed with a debug key: fine for testing, not for distribution. Android won't install an update signed with a different key, so uninstall the test build before switching to a properly signed one.
 
-### Windows
+## Connecting
 
-1. Visit [release page](https://github.com/iNavFlight/inav-configurator/releases)
-2. Download Configurator for Windows platform (ia32 or win64 is present)
-3. Install
-    * Extract ZIP archive and run the INAV Configurator app from the unpacked folder
-    * OR just use the setup program `INAV-Configurator_win32_arch_x.y.z.exe`, **arch** is your computer architecture (ia32 (32bit) or x64 (64bit)), **x.y.z** is the INAV Configurator version number.
+| Connection | How |
+|---|---|
+| USB | The port appears as a USB device path, e.g. `/dev/bus/usb/001/002`. Select it and press **Connect**. |
+| TCP | Select **TCP** and enter `IP:port`. For example SITL on a PC (`192.168.1.10:5760`) or a WiFi/ESP serial bridge. |
+| UDP | Select **UDP** and enter `IP:port`. |
 
-4.  Configurator is not signed, so you have to allow Windows to run untrusted applications. There might be a prompt for it during the first run
+BLE, SITL and Demo mode are hidden in the port list on Android because they are not supported.
 
-### Linux
+## What works
 
-1. Visit [release page](https://github.com/iNavFlight/inav-configurator/releases)
-2. Download Configurator for Linux platform (only linux64 is present)
-   *  **.rpm** is the Fedora installation file. Just download and install using `sudo dnf localinstall /path/to/INAV-Configurator_linux_x64-x.y.z.rpm` or open it with a package manager (e.g. via Files)
-   *  **.deb** is the Debian/Ubuntu installation file. Just download and install using `sudo apt install /path/to/INAV-Configurator_linux_x64_x.y.z.deb` or open it with a package manager (e.g. via the File Manager)
-   *  **.zip** is a universal archive. Download and continue with these instructions to install
-3. Change to the directory containing the downloaded **zip** file
-4. download [this](https://raw.githubusercontent.com/iNavFlight/inav-configurator/master/assets/linux/inav-configurator.desktop) file to the same directory. Its filename should be `inav-configurator.desktop`.
-5. Extract **zip** archive
+**Tested on real hardware.** Galaxy Tab 4 10.1 (LineageOS, Android 11, Adreno 305 GPU) with a HOBBYWING XRotor F7 on INAV 9.1.0:
+
+- The app starts in landscape with the desktop layout. Launcher icon and splash use the INAV logo.
+- USB serial connection to the FC (STM32 virtual COM port): the USB permission prompt, plus live attitude, sensors, dataflash info and pre-arming checks on the Status tab
+- The 3D craft model on the Status tab, lit and in colour
+- TCP over WiFi to INAV SITL running on a PC
+- The CLI tab, including command output
+- The optimized release build (R8)
+
+**Tested on the Android 11 emulator** (stock WebView 83):
+
+- App startup and TCP connection to SITL
+- The Status, Configuration and OSD tabs render correctly at tablet size
+- Writing, appending, reading, listing and deleting files in the app's backup folder
+
+## Expected to work, not tested yet
+
+These use the same code paths as the tested features, but nobody has tried them on Android yet:
+
+- **The other configuration tabs** (Ports, Receiver, Modes, Mixer, Outputs, PID tuning, Programming, …). They only talk MSP to the FC, which works.
+- **UDP connections**
+- **Saving and loading files through the Android file picker:** CLI save/load, backup and restore, mission files, OSD font files, and data/blackbox logs
+- **Downloading onboard (blackbox) logs** from dataflash
+- **USB-serial adapters:** FTDI, CP210x, CH34x and PL2303 are supported by the driver library but untested.
+- **Flashing over the serial bootloader** (not DFU, see below)
+- **The Magnetometer tab's 3D view**
+- **Mission Control**
+
+## What does not work
+
+- **USB DFU flashing.** Most F4/F7/H7 flight controllers are flashed in DFU mode, so firmware flashing generally won't work yet. Use the desktop configurator to flash.
+- **Bluetooth (BLE) connections**
+- **Local SITL and Demo mode.** Android can't run the SITL binary. Connecting over TCP to SITL running on another machine works.
+- **The update notification.** It's disabled, because it points to desktop downloads.
+- **"Open backup folder".** It only shows the folder path. Automatic backups are stored in `Android/data/com.inavflight.configurator/files/inav-backups`, which recent Android versions hide from most file managers. Use **backup to file** to save a copy somewhere visible.
+
+## Known issues
+
+- **Content loaded from GitHub inside the app can be blocked by CORS.** The settings documentation (`Settings.md`, used for help links) is blocked. The firmware list and firmware downloads in the flasher may be affected too (untested).
+- **OpenStreetMap tiles may be refused.** The desktop app sends a custom Referer/User-Agent for them, which the Android build doesn't do yet (untested).
+- **Latency is higher than on desktop on slow tablets.** HW round trip was about 45–115 ms on the Galaxy Tab 4, so screens refresh more slowly.
+- **3D models are rendered with simpler (matte) materials on Android.** This works around Adreno 3xx driver bugs that made them render black.
+- **Phone screens are cramped.** The app is locked to landscape and laid out for tablets.
+
+Please report Android-specific problems with the device model, Android version and WebView version. The WebView version is shown in the log line at the top of the app.
+
+## Building
+
+Requirements: Node.js 22+, Yarn, JDK 21, Android SDK (platform 36).
+
+```bash
+yarn install
+yarn android:apk           # debug APK
+yarn android:apk-release   # optimized release APK (R8 + resource shrinking)
+yarn android:open          # open the project in Android Studio
 ```
-unzip INAV-Configurator_linux_arch_x.y.z.zip -d /tmp/
-```
-  **arch** is your computer architecture (x64, armv7l, ...), **x.y.z** is the INAV Configurator version number.
 
-6. If this is the first time installing INAV Configurator, create a home for its files
-```
-sudo mkdir /opt/inav
-sudo chown $USER /opt/inav
-```
-7. Move the temporary files into their home 
-```
-mv /tmp/INAV\ Configurator /opt/inav/inav-configurator
-```
-8. Update the application icon.
-```
-sudo mkdir /opt/inav/inav-configurator/icon
-sudo cp /opt/inav/inav-configurator/resources/app/images/inav_icon_128.png /opt/inav/inav-configurator/icon
-```
-9. As a one-off, move the desktop file into the applications directory 
-```
-sudo mv inav-configurator.desktop /usr/share/applications/
-```
-10. Make the following files executable:
-   * inav-configurator `chmod +x /opt/inav/inav-configurator/inav-configurator`
-11. Run the INAV Configurator app from the unpacked folder `/opt/inav/inav-configurator/inav-configurator`
+APKs are written to `android/app/build/outputs/apk/{debug/app-debug,release/app-release}.apk`.
 
-### Mac
+Release signing uses `INAV_ANDROID_KEYSTORE`, `INAV_ANDROID_KEYSTORE_PASSWORD`, `INAV_ANDROID_KEY_ALIAS` and `INAV_ANDROID_KEY_PASSWORD`. Without them, the release APK is signed with the local debug key.
 
-1. Visit [release page](https://github.com/iNavFlight/inav-configurator/releases)
-2. Download Configurator for the Mac platform
-3. Install
-    * Extract ZIP archive and run INAV Configurator
-    * OR use the DMG package for installation
-4. Official tagged builds (`9.1.3` or `v9.1.3`) are signed and notarized. Nightlies are signed when repo secrets are configured. Pull-request and fork CI builds are always unsigned. If Gatekeeper blocks an unsigned app, run `xattr -cr "/path/to/INAV Configurator.app"` from Terminal.
+CI (`.github/workflows/android.yml`) builds both APKs for every pull request. Manual runs sign with the release key when the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` secrets are set.
 
-## Building and running INAV Configurator locally (for development)
+## How it works
 
-For local development, the **node.js** build system is used.
+- The renderer reaches the host OS only through `js/platform/`. On desktop that is the Electron preload API; on Android it is `js/platform/capacitor.js`. Both expose the same functions.
+- [Capacitor](https://capacitorjs.com/) packages the Vite web bundle (`vite.web.config.js`, output in `www/`) into the Android app.
+- The native plugins are in `android/app/src/main/java/com/inavflight/configurator/`:
+  - `InavSerial`: USB serial via [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)
+  - `InavTcp` and `InavUdp`: network connections
+  - `InavFile`: file picker and app storage
+- Parts of the native code follow the approach of the [Betaflight App](https://github.com/betaflight/betaflight-configurator) Android build (GPL-3.0).
 
-1. Install node.js
-1. From the project folder run `yarn install`
-1. To build and start the configurator:
-    - Run `yarn start`.
+## License
 
-To build the App run `yarn run make` to build for your platform.
-
-Options:
-* Architecture: --arch  - Allowed values are: "ia32", "x64", "armv7l", "arm64", "universal", or "mips64el". 
-
-See [Electron Forge CLI Documentation](https://www.electronforge.io/cli#options-2) for details
-
-Note: Not all architectures are available for all platforms. For example, ia32 (32bit) support is not available for Linux. 
-Tested architectures:
-- Windows: x64 and ia32
-- Linux: x64 and armv7l
-- MacOS: x64 and arm64
-
-To build the setup program for windows, you have to install [WiX Toolset V3](https://github.com/wixtoolset/wix3/releases) and add the `bin` folder to you `PATH`, e.g.
-```C:\Program Files (x86)\WiX Toolset v3.14\bin```
-
-To build deb and rpm packages for Linux, you have to install the following packages: 
-- Ubuntu/Debian: `dpkg, fakeroot, rpm, build-essential, libudev-dev`
-- OpenSuse/Fedora: `dpkg, fakeroot, rpmbuild, systemd-devel, devel-basis (zypper install -t pattern devel_basis), zip`
-
-Example (note the double -- ):
-```npm run make -- --arch="x64"```
-
-### Running with debug | Inspector
-
-To be able to open Inspector, set environment variable `NODE_ENV` to `development` or set the flag directly when run `npm start`:
-
-```NODE_ENV=development npm start``` or ```$env:NODE_ENV="development" | npm start``` for Windows PowerShell
-Chrome Devtools will be available on http://localhost:9222. This can also be used with an MCP plugin
-
-Or use VScode and start a debug session `Debug Configurator` (Just hit F5!)
-
-To debug the main thread (source files in `js/main`), just set a breakpoint in VScode.
-
-
-To capture a debug log from a packaged version (such as from a user), they can run it as:
-```.\inav-configurator.exe --enable-logging --log-file=inav-log.txt```
-or to log to the console:
-```.\inav-configurator.exe --enable-logging --log-file=inav-log.txt```
-
-
-
-
-## Different map providers
-
-INAV Configurator allows you to choose between OpenStreetMap, Esri World Imagery (Aerial View), and MapProxy map providers.
-
-### How to choose a Map provider
-
-1. Click **Settings** icon in the top-right corner of INAV Configurator
-1. Choose a provider: OpenStreetMap, Esri, or MapProxy
-1. For MapProxy, you need to provide a server URL and layer name to be used
-
-### How to set up a MapProxy server for offline caching and mission planning
-1. Follow the process described in [MAPPROXY.md](MAPPROXY.md)
-1. Test your MapProxy server in a web browser, eg: http://192.168.145.20/inavmapproxy/
-1. Once you have a working MapProxy server choose MapProxy as your map provider
-	1. Enter MapProxy service URL, eg: http://192.168.145.20/inavmapproxy/service?
-	1. Enter MapProxy service layer (inav_layer if configured from MAPPROXY.md)
-1. Once completed, you can zoom in on the area you will be flying in while connected to the internet in either the GPS or Mission Control tab to save the cache for offline use
-
-## Font Customisation
-
-INAV provides the font images so that custom fonts can be created for your personal preference. This is the case for both analogue and digital fonts. The resources can be found in the [osd](/resources/osd) folder. Within the **analogue** and **digital** subfolders, you will find information on compiling your own fonts. There is also an [INAV Character Map](/resources/osd/INAV%20Character%20Map.md) document. This contains previews of all the character images in the fonts and the appropriate variable names within the firmware and Configurator. There are tools for compiling the [analogue](https://github.com/fiam/max7456tool) and [digital](https://github.com/MrD-RC/hdosd-font-tool) fonts. New font submissions via pull requests are welcome.
-
-## Notes
-
-### WebGL
-
-Make sure Settings -> System -> "Use hardware acceleration when available" is checked to achieve the best performance
-
-## Issue trackers
-
-For INAV configurator issues raise them here
-
-https://github.com/iNavFlight/inav-configurator/issues
-
-For INAV firmware issues, raise them here
-
-https://github.com/iNavFlight/inav/issues
-
-## Developers
-
-We accept clean and reasonable patches, submit them!
+GPL-3.0.
