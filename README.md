@@ -95,9 +95,16 @@ yarn android:open          # open the project in Android Studio
 
 APKs are written to `android/app/build/outputs/apk/{debug/app-debug,release/app-release}.apk`.
 
-Release signing uses `INAV_ANDROID_KEYSTORE`, `INAV_ANDROID_KEYSTORE_PASSWORD`, `INAV_ANDROID_KEY_ALIAS` and `INAV_ANDROID_KEY_PASSWORD`. Without them, the release APK is signed with the local debug key.
+Release signing uses `INAV_ANDROID_KEYSTORE`, `INAV_ANDROID_KEYSTORE_PASSWORD` and `INAV_ANDROID_KEY_ALIAS` (plus `INAV_ANDROID_KEY_PASSWORD` if the key password differs from the keystore password). Without them, the release APK is signed with the local debug key.
 
-CI (`.github/workflows/android.yml`) builds both APKs for every pull request. Manual runs sign with the release key when the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` secrets are set.
+CI (`.github/workflows/android.yml`) builds both APKs for every pull request. Manual runs and release tags sign with the release key, configured under **Settings → Secrets and variables → Actions**:
+
+| Name | Kind | Value |
+|---|---|---|
+| `ANDROID_KEYSTORE_BASE64` | Secret | The keystore file, base64-encoded (`base64 -w0 release.jks`) |
+| `ANDROID_KEYSTORE_PASSWORD` | Secret | The keystore password |
+| `ANDROID_KEY_ALIAS` | Variable | The key's alias. Not sensitive, so it is a variable: a secret would be masked in all logs. |
+| `ANDROID_KEY_PASSWORD` | Secret, optional | Only if the key password differs from the keystore password (never for PKCS12 keystores) |
 
 ## Releases
 

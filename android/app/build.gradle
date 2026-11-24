@@ -31,15 +31,16 @@ android {
     }
     signingConfigs {
         // Release key from the environment (CI / official builds):
-        //   INAV_ANDROID_KEYSTORE, INAV_ANDROID_KEYSTORE_PASSWORD,
-        //   INAV_ANDROID_KEY_ALIAS, INAV_ANDROID_KEY_PASSWORD
+        //   INAV_ANDROID_KEYSTORE, INAV_ANDROID_KEYSTORE_PASSWORD, INAV_ANDROID_KEY_ALIAS,
+        //   INAV_ANDROID_KEY_PASSWORD (optional, defaults to the keystore password)
         release {
             def keystore = System.getenv('INAV_ANDROID_KEYSTORE')
             if (keystore) {
                 storeFile file(keystore)
                 storePassword System.getenv('INAV_ANDROID_KEYSTORE_PASSWORD')
                 keyAlias System.getenv('INAV_ANDROID_KEY_ALIAS')
-                keyPassword System.getenv('INAV_ANDROID_KEY_PASSWORD')
+                // PKCS12 keystores use the keystore password for the key too.
+                keyPassword System.getenv('INAV_ANDROID_KEY_PASSWORD') ?: System.getenv('INAV_ANDROID_KEYSTORE_PASSWORD')
             }
         }
     }

@@ -11,9 +11,17 @@ name: Build Android
 # Signing rules:
 # - pull_request runs never import secrets; the release APK is signed with the
 #   runner's debug key (installable for testing, not for distribution).
-# - Other runs sign the release APK with the release keystore when ALL four
-#   ANDROID_* secrets are set; a partial set falls back to the debug key, unless
-#   require_signing is true or a release tag is being built, in which case the job fails.
+# - Other runs sign the release APK with the release keystore when it is fully
+#   configured; otherwise they fall back to the debug key, unless require_signing
+#   is true or a release tag is being built, in which case the job fails.
+#
+# Release keystore configuration (Settings -> Secrets and variables -> Actions):
+# - secret   ANDROID_KEYSTORE_BASE64    the keystore file, base64-encoded
+# - secret   ANDROID_KEYSTORE_PASSWORD  the keystore password
+# - variable ANDROID_KEY_ALIAS          the key's alias (not sensitive; a secret
+#                                       would mask it in logs and job outputs)
+# - secret   ANDROID_KEY_PASSWORD       optional; defaults to the keystore password,
+#                                       which is always the same for PKCS12 keystores
 on:
   pull_request:
   push:
@@ -22,21 +30,19 @@ on:
   workflow_dispatch:
     inputs:
       require_signing:
-        description: 'Fail unless the release keystore secrets are complete'
+        description: 'Fail unless the release keystore is configured'
         type: boolean
         default: false
   workflow_call:
     inputs:
       require_signing:
-        description: 'Fail unless the release keystore secrets are complete'
+        description: 'Fail unless the release keystore is configured'
         type: boolean
         default: false
     secrets:
       ANDROID_KEYSTORE_BASE64:
         required: false
       ANDROID_KEYSTORE_PASSWORD:
-        required: false
-      ANDROID_KEY_ALIAS:
         required: false
       ANDROID_KEY_PASSWORD:
         required: false
@@ -111,11 +117,12 @@ jobs:
               env:
                 KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
                 KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-                KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+                KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS }}
                 KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
                 REQUIRE_SIGNING: ${{ inputs.require_signing || github.ref_type == 'tag' }}
               run: |
-                if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+                KEY_PASSWORD="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+                if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ]; then
                   KEYSTORE="$RUNNER_TEMP/inav-release.keystore"
                   echo "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
                   {
@@ -126,10 +133,10 @@ jobs:
                   } >> $GITHUB_ENV
                   echo "Release keystore imported."
                 elif [ "$REQUIRE_SIGNING" = "true" ]; then
-                  echo "::error::Android release signing secrets are incomplete."
+                  echo "::error::Android release signing is not configured: need secrets ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD, and variable ANDROID_KEY_ALIAS."
                   exit 1
                 else
-                  echo "::warning::Android release signing secrets are incomplete; signing with the debug key."
+                  echo "::warning::Android release signing is not configured; signing with the debug key."
                 fi
             - name: Build APKs
               working-directory: android
