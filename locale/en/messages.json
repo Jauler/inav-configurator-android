@@ -57,6 +57,9 @@
     "navCollapseAll": {
         "message": "Collapse All"
     },
+    "navMenu": {
+        "message": "Menu"
+    },
     "options_unit_type": {
         "message": "Set how the units render on the configurator only"
     },

@@ -9,7 +9,7 @@ This is the same configurator: the unmodified desktop UI runs inside the Android
 ## Requirements
 
 - Android 11 or newer
-- A tablet in landscape. The UI is the desktop layout, so it needs about 1280×800 dp; phones are not a target.
+- A tablet or a phone, in either orientation. Tablets in landscape get the desktop layout (about 1280×800 dp). Narrower or shorter screens get a compact layout: the header becomes a tool bar and the tab list a slide-out menu (☰). Individual tabs are still the desktop pages; on a phone their columns stack and wide tables scroll sideways.
 - USB host (OTG) support and a USB OTG cable for wired connections
 - An up-to-date Android System WebView is recommended. Stock Android 11 WebView (Chrome 83) is supported.
 
@@ -38,7 +38,7 @@ BLE, SITL and Demo mode are hidden in the port list on Android because they are 
 
 **Tested on real hardware.** Galaxy Tab 4 10.1 (LineageOS, Android 11, Adreno 305 GPU) with a HOBBYWING XRotor F7 on INAV 9.1.0:
 
-- The app starts in landscape with the desktop layout. Launcher icon and splash use the INAV logo.
+- The desktop layout in landscape. Launcher icon and splash use the INAV logo.
 - USB serial connection to the FC (STM32 virtual COM port): the USB permission prompt, plus live attitude, sensors, dataflash info and pre-arming checks on the Status tab
 - The 3D craft model on the Status tab, lit and in colour
 - TCP over WiFi to INAV SITL running on a PC
@@ -78,7 +78,7 @@ These use the same code paths as the tested features, but nobody has tried them 
 - **OpenStreetMap tiles may be refused.** The desktop app sends a custom Referer/User-Agent for them, which the Android build doesn't do yet (untested).
 - **Latency is higher than on desktop on slow tablets.** HW round trip was about 45–115 ms on the Galaxy Tab 4, so screens refresh more slowly.
 - **3D models are rendered with simpler (matte) materials on Android.** This works around Adreno 3xx driver bugs that made them render black.
-- **Phone screens are cramped.** The app is locked to landscape and laid out for tablets.
+- **Phone screens are still tight inside the tabs.** The app rotates with the device and the header and menu adapt to phones, but the tab pages themselves are the desktop ones. Tabs built around a fixed-size canvas or a wide table (OSD preview, LED strip, adjustments, programming) have to be panned sideways in portrait. The phone layout (rotation, menu, back button) was checked in the Android 14 emulator (Pixel 6 profile, WebView 113) without a flight controller attached, not yet on real phones.
 
 Please report Android-specific problems with the device model, Android version and WebView version. The WebView version is shown in the log line at the top of the app.
 

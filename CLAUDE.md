@@ -109,6 +109,19 @@ functionality to both** (and to `preload.js`/`main.js`).
   `saf://<n>/<display name>` (mapped back to `content://` URIs in `capacitor.js`).
 - Not supported on Android yet: BLE, USB DFU flashing (serial-bootloader flashing goes
   through the serial plugin), local SITL/demo mode.
+- Orientation follows the device (`android:screenOrientation="fullUser"`: auto-rotate,
+  honouring the system rotation lock). The activity handles the configuration change
+  itself, so rotating does not reload the WebView.
+- Phone layout: `src/css/mobile.css` applies when the window is narrower than 900px or
+  shorter than 520px. It is scoped to `html.platform-android` (set by `js/mobileNav.js`),
+  collapses the header into a wrapping tool bar and turns the tab list into a drawer
+  opened by `#nav-toggle`. The page is a flex column there, so tab styles must not
+  depend on the 110px desktop header. Elements that scripts show/hide with jQuery
+  (`#portsinput`, `#sensor-status`, ...) must keep their default `display` in that file:
+  jQuery restores the value it saw when hiding, which would leak into the other layout
+  after a rotation.
+- The Android back button calls `window.inavHandleBackButton()` first (closes the
+  drawer); when that returns `false` the default back action runs (`MainActivity`).
 - Requires JDK 21 and Android SDK 36 (Capacitor 8).
 
 ```bash
