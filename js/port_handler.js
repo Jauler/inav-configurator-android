@@ -3,7 +3,7 @@
 import GUI from './../js/gui';
 import ConnectionSerial from './connection/connectionSerial';
 import store from './store';
-import { isAndroid } from './platform';
+import { isAndroid, usb } from './platform';
 
 var usbDevices =  [
     { 'vendorId': 1155, 'productId': 57105}, 
@@ -169,14 +169,14 @@ PortHandler.check_usb_devices = function (callback) {
     
     self.dfu_available = false;
 
-    // WebUSB is not available in every host (e.g. the Android WebView).
-    if (!navigator.usb) {
+    // WebUSB, or the native stand-in on Android (js/platform). Absent elsewhere.
+    if (!usb) {
         if (callback)
             callback(false);
         return;
     }
     
-    navigator.usb.getDevices().then(devices => {
+    usb.getDevices().then(devices => {
         devices.forEach(device  => {
             usbDevices.forEach(usbDev => {
                 if (device.vendorId == usbDev.vendorId && device.productId == usbDev.productId) {
@@ -199,6 +199,10 @@ PortHandler.check_usb_devices = function (callback) {
     
         if (callback) 
             callback(self.dfu_available);
+    }).catch(error => {
+        console.log('USB device check failed:', error);
+        if (callback)
+            callback(false);
     });
 }
 

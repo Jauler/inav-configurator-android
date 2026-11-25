@@ -8,7 +8,7 @@
  * Binary payloads cross the JS<->Java bridge as base64 strings.
  */
 
-import { registerPlugin } from '@capacitor/core';
+import { CapacitorHttp, registerPlugin } from '@capacitor/core';
 import { version as upstreamVersion } from '../../package.json';
 
 // Android releases are tagged v<upstream version>-<revision>; CI passes the revision
@@ -20,6 +20,7 @@ const Serial = registerPlugin('InavSerial');
 const Tcp = registerPlugin('InavTcp');
 const Udp = registerPlugin('InavUdp');
 const Files = registerPlugin('InavFile');
+const Usb = registerPlugin('InavUsb');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -247,6 +248,180 @@ async function transportClose(plugin) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// USB (DFU flashing)
+//
+// The WebView has no WebUSB. `usb` mimics the subset of navigator.usb /
+// USBDevice that js/protocols/stm32usbdfu.js and js/port_handler.js use, on top
+// of the InavUsb plugin's raw control transfers.
+// ---------------------------------------------------------------------------
+
+const USB_REQUEST_TYPES = { standard: 0x00, class: 0x20, vendor: 0x40 };
+const USB_RECIPIENTS = { device: 0x00, interface: 0x01, endpoint: 0x02, other: 0x03 };
+
+function bmRequestType(directionIn, setup) {
+    return (directionIn ? 0x80 : 0x00)
+        | (USB_REQUEST_TYPES[setup.requestType] || 0)
+        | (USB_RECIPIENTS[setup.recipient] || 0);
+}
+
+class AndroidUsbDevice {
+    constructor(info) {
+        this.deviceName = info.deviceName;
+        this.vendorId = info.vendorId;
+        this.productId = info.productId;
+        this.productName = info.productName;
+        this.manufacturerName = info.manufacturerName;
+        this.serialNumber = info.serialNumber;
+        this.opened = false;
+        // Android opens devices with their active configuration already selected.
+        this.configuration = { configurationValue: 1 };
+    }
+
+    async open() {
+        await Usb.open({ deviceName: this.deviceName });
+        this.opened = true;
+    }
+
+    async close() {
+        this.opened = false;
+        await Usb.close();
+    }
+
+    // Android has no public USB reset; DFU exit is done with DNLOAD/GETSTATUS instead.
+    async reset() {}
+
+    async selectConfiguration() {}
+
+    claimInterface(interfaceNumber) {
+        return Usb.claimInterface({ interfaceNumber: interfaceNumber });
+    }
+
+    releaseInterface(interfaceNumber) {
+        return Usb.releaseInterface({ interfaceNumber: interfaceNumber });
+    }
+
+    selectAlternateInterface(interfaceNumber, alternateSetting) {
+        return Usb.selectAlternateInterface({ interfaceNumber: interfaceNumber, alternateSetting: alternateSetting });
+    }
+
+    async controlTransferIn(setup, length) {
+        const result = await Usb.controlTransfer({
+            requestType: bmRequestType(true, setup),
+            request: setup.request,
+            value: setup.value,
+            index: setup.index,
+            length: length,
+        });
+        const bytes = base64ToBytes(result.data);
+        return { status: result.status, data: new DataView(bytes.buffer) };
+    }
+
+    async controlTransferOut(setup, data) {
+        const bytes = data ? toBytes(data) : new Uint8Array(0);
+        const result = await Usb.controlTransfer({
+            requestType: bmRequestType(false, setup),
+            request: setup.request,
+            value: setup.value,
+            index: setup.index,
+            data: bytes.length ? bytesToBase64(bytes) : '',
+        });
+        return { status: result.status, bytesWritten: result.length };
+    }
+}
+
+// Devices are asked for permission once per attachment: a board rebooting into
+// DFU shows up under a new device name, so it is asked again, but a refusal is
+// not repeated every poll.
+const usbPermissionAsked = new Set();
+let usbPermissionPending = null;
+
+// Upper bound on waiting for the permission dialog, so a lost result cannot
+// block DFU detection forever.
+const USB_PERMISSION_TIMEOUT_MS = 60000;
+
+async function requestUsbPermission(device) {
+    usbPermissionAsked.add(device.deviceName);
+    let timer = null;
+    try {
+        const timeout = new Promise((resolve) => {
+            timer = setTimeout(() => resolve({ granted: false, timedOut: true }), USB_PERMISSION_TIMEOUT_MS);
+        });
+        const result = await Promise.race([Usb.requestPermission({ deviceName: device.deviceName }), timeout]);
+        if (result.timedOut) {
+            console.warn('USB permission request timed out for', device.deviceName);
+        }
+        return !!result.granted;
+    } catch (err) {
+        console.warn('USB permission request failed:', errorMessage(err));
+        return false;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+const usb = {
+    /**
+     * Like navigator.usb.getDevices(): resolves with the DFU devices the app may use.
+     * A newly attached device is asked for permission first; concurrent callers
+     * (the port poller and the flasher) wait for the same dialog. Never rejects.
+     */
+    getDevices: async () => {
+        try {
+            let { devices = [] } = await Usb.getDevices();
+
+            if (usbPermissionPending) {
+                await usbPermissionPending;
+                ({ devices = [] } = await Usb.getDevices());
+            } else {
+                const toAsk = devices.filter((d) => !d.hasPermission && !usbPermissionAsked.has(d.deviceName));
+                if (toAsk.length) {
+                    usbPermissionPending = (async () => {
+                        for (const device of toAsk) {
+                            await requestUsbPermission(device);
+                        }
+                    })();
+                    try {
+                        await usbPermissionPending;
+                    } finally {
+                        usbPermissionPending = null;
+                    }
+                    ({ devices = [] } = await Usb.getDevices());
+                }
+            }
+
+            // Forget devices that are gone so a replugged board is asked again.
+            const present = new Set(devices.map((d) => d.deviceName));
+            usbPermissionAsked.forEach((name) => {
+                if (!present.has(name)) {
+                    usbPermissionAsked.delete(name);
+                }
+            });
+
+            return devices.filter((d) => d.hasPermission).map((d) => new AndroidUsbDevice(d));
+        } catch (err) {
+            console.warn('usb.getDevices failed:', errorMessage(err));
+            return [];
+        }
+    },
+};
+
+// ---------------------------------------------------------------------------
+// HTTP
+// ---------------------------------------------------------------------------
+
+/**
+ * GET a text resource natively. GitHub release assets (firmware .hex files) are
+ * served without CORS headers, which the WebView would otherwise block.
+ */
+async function httpGetText(url) {
+    const response = await CapacitorHttp.get({ url: url, responseType: 'text' });
+    if (response.status < 200 || response.status >= 300) {
+        throw new Error(`HTTP ${response.status} for ${url}`);
+    }
+    return typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+}
+
 const unsupported = (name) => () => {
     console.warn(`${name} is not supported on this platform`);
 };
@@ -267,7 +442,12 @@ const capacitorPlatform = {
         }
     },
     serialConnect: (path, options) => transportConnect(() =>
-        Serial.connect({ path: path, baudRate: (options && options.bitrate) || 115200 })),
+        Serial.connect({
+            path: path,
+            baudRate: (options && options.bitrate) || 115200,
+            parity: (options && options.parityBit) || 'none',
+            stopBits: (options && options.stopBits) || 'one',
+        })),
     serialSend: (data) => transportSend(Serial, data),
     serialClose: () => transportClose(Serial),
     onSerialData: serialData.on,
@@ -296,6 +476,12 @@ const capacitorPlatform = {
     offUdpMessage: udpMessage.off,
     onUdpError: udpError.on,
     offUdpError: udpError.off,
+
+    // USB (DFU) ------------------------------------------------------------
+    usb: usb,
+
+    // HTTP -----------------------------------------------------------------
+    httpGetText: httpGetText,
 
     // Settings / app info --------------------------------------------------
     storeGet: storeGet,

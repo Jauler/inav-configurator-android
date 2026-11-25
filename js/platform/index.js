@@ -23,4 +23,28 @@ export const isAndroid = isCapacitor && Capacitor.getPlatform() === 'android';
 
 const platform = isElectron ? window.electronAPI : capacitorPlatform;
 
+/**
+ * WebUSB-shaped USB access for DFU flashing: navigator.usb where the host has it
+ * (Electron), the InavUsb-backed stand-in on Android. Null when neither exists.
+ * Kept separate from `platform` because navigator.usb cannot cross the Electron
+ * context bridge.
+ */
+export const usb = isCapacitor ? capacitorPlatform.usb : ((typeof navigator !== 'undefined' && navigator.usb) || null);
+
+/**
+ * GET a text resource. On Android this goes through the native HTTP stack, since
+ * GitHub release assets carry no CORS headers; Electron runs with webSecurity off,
+ * so a plain fetch works there.
+ */
+export async function httpGetText(url) {
+    if (isCapacitor) {
+        return capacitorPlatform.httpGetText(url);
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status} for ${url}`);
+    }
+    return response.text();
+}
+
 export default platform;

@@ -103,12 +103,19 @@ on Android. Both expose the same method names and result shapes, so **add new ho
 functionality to both** (and to `preload.js`/`main.js`).
 
 - Native plugins: `android/app/src/main/java/com/inavflight/configurator/`
-  (`InavSerial` via usb-serial-for-android, `InavTcp`, `InavUdp`, `InavFile`).
+  (`InavSerial` via usb-serial-for-android, `InavTcp`, `InavUdp`, `InavFile`, `InavUsb`).
   Binary data crosses the bridge as base64.
+- DFU flashing: the WebView has no WebUSB, so `capacitor.js` exposes `usb`, a
+  `navigator.usb`/`USBDevice` look-alike over `InavUsb` control transfers.
+  `js/protocols/stm32usbdfu.js` and `js/port_handler.js` use `usb` from `js/platform`
+  (which is `navigator.usb` on desktop). Its `getDevices()` asks for USB permission
+  for newly attached DFU devices. DFU VID/PIDs live in `usbDevices` (port_handler.js),
+  `InavUsbPlugin.java` and `device_filter.xml`; keep them in sync.
+- Online firmware downloads use `httpGetText()` from `js/platform` (`CapacitorHttp` on
+  Android), because GitHub release assets send no CORS headers.
 - Files picked through the Android file picker are handed to callers as pseudo paths
   `saf://<n>/<display name>` (mapped back to `content://` URIs in `capacitor.js`).
-- Not supported on Android yet: BLE, USB DFU flashing (serial-bootloader flashing goes
-  through the serial plugin), local SITL/demo mode.
+- Not supported on Android yet: BLE, local SITL/demo mode.
 - Requires JDK 21 and Android SDK 36 (Capacitor 8).
 
 ```bash

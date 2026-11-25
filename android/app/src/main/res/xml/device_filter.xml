@@ -2,7 +2,8 @@
 <!--
   USB devices that offer to open INAV Configurator when plugged in. Accepting
   that prompt also grants USB permission, so no second dialog is needed.
-  Keep in sync with serialDevices in js/connection/connectionSerial.js.
+  Keep in sync with serialDevices in js/connection/connectionSerial.js (serial) and
+  usbDevices in js/port_handler.js (DFU bootloaders, InavUsbPlugin.java).
 -->
 <resources>
     <usb-device vendor-id="1027" product-id="24577" />   <!-- FTDI FT232R -->
@@ -17,4 +18,7 @@
     <usb-device vendor-id="6790" product-id="21795" />   <!-- CH341 -->
     <usb-device vendor-id="11836" product-id="22336" />  <!-- AT32 VCP -->
     <usb-device vendor-id="12619" product-id="22336" />  <!-- APM32 VCP -->
+    <usb-device vendor-id="1155" product-id="57105" />   <!-- STM32 DFU bootloader -->
+    <usb-device vendor-id="11836" product-id="57105" />  <!-- AT32 DFU bootloader -->
+    <usb-device vendor-id="12619" product-id="262" />    <!-- APM32 DFU bootloader -->
 </resources>

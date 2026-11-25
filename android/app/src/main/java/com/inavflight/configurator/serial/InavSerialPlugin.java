@@ -227,7 +227,7 @@ public class InavSerialPlugin extends Plugin implements SerialInputOutputManager
             }
             port = driver.getPorts().get(0);
             port.open(connection);
-            port.setParameters(baudRate, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+            port.setParameters(baudRate, 8, parseStopBits(call.getString("stopBits")), parseParity(call.getString("parity")));
             try {
                 port.setDTR(true);
                 port.setRTS(true);
@@ -244,6 +244,26 @@ public class InavSerialPlugin extends Plugin implements SerialInputOutputManager
             closePort();
             call.reject("Unable to open serial port: " + e.getMessage());
         }
+    }
+
+    // Names as used by the renderer (parityBit/stopBits connect options); the STM32 UART
+    // bootloader needs 8E1.
+    private static int parseParity(String parity) {
+        if (parity == null) {
+            return UsbSerialPort.PARITY_NONE;
+        }
+        switch (parity) {
+            case "even":
+                return UsbSerialPort.PARITY_EVEN;
+            case "odd":
+                return UsbSerialPort.PARITY_ODD;
+            default:
+                return UsbSerialPort.PARITY_NONE;
+        }
+    }
+
+    private static int parseStopBits(String stopBits) {
+        return "two".equals(stopBits) ? UsbSerialPort.STOPBITS_2 : UsbSerialPort.STOPBITS_1;
     }
 
     private synchronized void closePort() {

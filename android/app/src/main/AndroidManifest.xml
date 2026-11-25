@@ -43,12 +43,13 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
-        <!-- Explicit receiver for the USB permission PendingIntent (required on Android 14+) -->
+        <!-- Explicit receiver for the USB permission PendingIntents (serial + DFU; required on Android 14+) -->
         <receiver
             android:name=".serial.UsbPermissionReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.inavflight.configurator.USB_PERMISSION" />
+                <action android:name="com.inavflight.configurator.DFU_USB_PERMISSION" />
             </intent-filter>
         </receiver>
     </application>

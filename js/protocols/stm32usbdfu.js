@@ -15,6 +15,7 @@
 import GUI from './../gui';
 import i18n from './../localization';
 import firmwareFlasherTab from '../../tabs/firmware_flasher';
+import { usb } from './../platform';
 
 var STM32DFU_protocol = function () {
     this.callback = null;
@@ -94,7 +95,14 @@ STM32DFU_protocol.prototype.connect = function (usbDevices, hex, options, callba
     // reset progress bar to initial state
     firmwareFlasherTab.flashingMessage(null, firmwareFlasherTab.FLASH_MESSAGE_TYPES.NEUTRAL).flashProgress(0);
 
-    navigator.usb.getDevices().then(devices => {
+    if (!usb) {
+        GUI.log(i18n.getMessage('stm32UsbDfuNotFound'));
+        GUI.connect_lock = false;
+        return;
+    }
+
+    self.usbDevice = null;
+    usb.getDevices().then(devices => {
         var dev = null;
         devices.forEach(device  => {
             usbDevices.forEach(usbDev => {
@@ -111,6 +119,7 @@ STM32DFU_protocol.prototype.connect = function (usbDevices, hex, options, callba
         } else {
             console.log('USB DFU not found');
             GUI.log(i18n.getMessage('stm32UsbDfuNotFound'));
+            GUI.connect_lock = false;
         }
 
     });
@@ -169,6 +178,10 @@ STM32DFU_protocol.prototype.releaseInterface = function (interfaceNumber) {
 
     self.usbDevice.releaseInterface(interfaceNumber).then(() => {
         console.log('Released interface: ' + interfaceNumber);
+        self.closeDevice();
+    }).catch(error => {
+        // The device may already be gone (it re-enumerates after leaving DFU).
+        console.log('Failed to release interface ' + interfaceNumber + ': ' + error);
         self.closeDevice();
     });
 };
@@ -478,6 +491,8 @@ STM32DFU_protocol.prototype.controlTransfer = function (direction, request, valu
             }
         }).catch(() => {
             console.log('USB controlTransfer OUT failed for request ' + request + '!');
+            // Without this the flash would stall forever waiting for the callback.
+            self.cleanup();
         });
     }
 };
@@ -488,7 +503,11 @@ STM32DFU_protocol.prototype.clearStatus = function (callback) {
 
     function check_status() {
         self.controlTransfer('in', self.request.GETSTATUS, 0, 0, 6, 0, function (data) {
-            if (data[4] == self.state.dfuIDLE) {
+            if (data.length === 0) {
+                // GETSTATUS failed (device gone); retrying would loop forever.
+                console.log('USB GETSTATUS failed while clearing status');
+                self.cleanup();
+            } else if (data[4] == self.state.dfuIDLE) {
                 callback(data);
             } else {
                 var delay = data[1] | (data[2] << 8) | (data[3] << 16);

@@ -24,7 +24,7 @@ import dialog from '../js/dialog.js';
 import BackupRestore from './../js/backup_restore';
 import MigrationHandler from './../js/migration/migration_handler';
 import { FlashRestoreFlow, showMigrationPreview, prepareRestoreData, executeRestore } from './firmware_flasher_restore';
-import platform from './../js/platform';
+import platform, { httpGetText } from './../js/platform';
 
 const firmwareFlasherTab = {};
 
@@ -565,10 +565,13 @@ firmwareFlasherTab.initialize = function (callback) {
             if (summary) { // undefined while list is loading or while running offline
                 fileName = summary.file;
                 $(".load_remote_file").text(i18n.getMessage('firmwareFlasherButtonLoading')).addClass('disabled');
-                $.get(summary.url, function (data) {
+                httpGetText(summary.url).then(function (data) {
                     enable_load_online_button();
                     process_hex(data, summary);
-                }).fail(failed_to_load);
+                }).catch(function (err) {
+                    console.log('Firmware download failed:', err);
+                    failed_to_load();
+                });
             } else {
                 $('span.progressLabel').text(i18n.getMessage('firmwareFlasherFailedToLoadOnlineFirmware'));
             }

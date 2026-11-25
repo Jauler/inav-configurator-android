@@ -65,9 +65,16 @@ STM32_protocol.prototype.pollForRebootCompletion = function(port, hex, options, 
     var portAbsentCount = 0;
     var portAbsentThreshold = 8;
     var connectingInProgress = false;
+    var checkInProgress = false;
     var pollInterval = null;
 
     pollInterval = setInterval(function() {
+        // A check can take as long as the user needs to answer the Android USB
+        // permission dialog for the DFU device; don't count that time as retries.
+        if (connectingInProgress || checkInProgress) {
+            return;
+        }
+
         retries++;
         if (retries > maxRetries) {
             clearInterval(pollInterval);
@@ -75,11 +82,9 @@ STM32_protocol.prototype.pollForRebootCompletion = function(port, hex, options, 
             return;
         }
 
-        if (connectingInProgress) {
-            return;
-        }
-
+        checkInProgress = true;
         PortHandler.check_usb_devices(function(dfu_available) {
+            checkInProgress = false;
             if (dfu_available) {
                 console.log('DFU device detected');
                 clearInterval(pollInterval);

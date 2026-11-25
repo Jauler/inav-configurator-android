@@ -9,6 +9,7 @@ import com.inavflight.configurator.file.InavFilePlugin;
 import com.inavflight.configurator.net.InavTcpPlugin;
 import com.inavflight.configurator.net.InavUdpPlugin;
 import com.inavflight.configurator.serial.InavSerialPlugin;
+import com.inavflight.configurator.usb.InavUsbPlugin;
 
 public class MainActivity extends BridgeActivity {
     @Override
@@ -17,6 +18,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(InavTcpPlugin.class);
         registerPlugin(InavUdpPlugin.class);
         registerPlugin(InavFilePlugin.class);
+        registerPlugin(InavUsbPlugin.class);
 
         // When launched by a USB attach intent (the "open INAV Configurator when this
         // device is connected" prompt), replace it with a plain launcher intent before

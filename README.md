@@ -60,13 +60,12 @@ These use the same code paths as the tested features, but nobody has tried them 
 - **Saving and loading files through the Android file picker:** CLI save/load, backup and restore, mission files, OSD font files, and data/blackbox logs
 - **Downloading onboard (blackbox) logs** from dataflash
 - **USB-serial adapters:** FTDI, CP210x, CH34x and PL2303 are supported by the driver library but untested.
-- **Flashing over the serial bootloader** (not DFU, see below)
+- **Firmware flashing.** USB DFU (the usual way for F4/F7/H7 boards, including the automatic reboot into DFU) and the serial bootloader, with online or local `.hex` files. Android asks for USB permission again when the board reappears in DFU mode.
 - **The Magnetometer tab's 3D view**
 - **Mission Control**
 
 ## What does not work
 
-- **USB DFU flashing.** Most F4/F7/H7 flight controllers are flashed in DFU mode, so firmware flashing generally won't work yet. Use the desktop configurator to flash.
 - **Bluetooth (BLE) connections**
 - **Local SITL and Demo mode.** Android can't run the SITL binary. Connecting over TCP to SITL running on another machine works.
 - **The update notification.** It's disabled, because it points to desktop downloads.
@@ -74,7 +73,7 @@ These use the same code paths as the tested features, but nobody has tried them 
 
 ## Known issues
 
-- **Content loaded from GitHub inside the app can be blocked by CORS.** The settings documentation (`Settings.md`, used for help links) is blocked. The firmware list and firmware downloads in the flasher may be affected too (untested).
+- **Content loaded from GitHub inside the app can be blocked by CORS.** The settings documentation (`Settings.md`, used for help links) is blocked. The flasher's firmware list (GitHub API) allows CORS, and firmware `.hex` downloads go through the native HTTP stack, so they are not affected.
 - **OpenStreetMap tiles may be refused.** The desktop app sends a custom Referer/User-Agent for them, which the Android build doesn't do yet (untested).
 - **Latency is higher than on desktop on slow tablets.** HW round trip was about 45–115 ms on the Galaxy Tab 4, so screens refresh more slowly.
 - **3D models are rendered with simpler (matte) materials on Android.** This works around Adreno 3xx driver bugs that made them render black.
@@ -133,6 +132,7 @@ The APK's `versionName` is `9.1.2-1` and its `versionCode` is `9010201`, so each
   - `InavSerial`: USB serial via [usb-serial-for-android](https://github.com/mik3y/usb-serial-for-android)
   - `InavTcp` and `InavUdp`: network connections
   - `InavFile`: file picker and app storage
+  - `InavUsb`: raw USB control transfers for DFU flashing, wrapped in a WebUSB-like object
 - Parts of the native code follow the approach of the [Betaflight App](https://github.com/betaflight/betaflight-configurator) Android build (GPL-3.0).
 
 ## License

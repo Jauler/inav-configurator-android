@@ -9,7 +9,7 @@ import CONFIGURATOR from '../js/data_storage';
 import GUI from '../js/gui';
 import FC from '../js/fc';
 import ConnectionSerial from '../js/connection/connectionSerial';
-import platform from './../js/platform';
+import platform, { isAndroid } from './../js/platform';
 
 /**
  * Manages the post-flash restore UI flow for the Firmware Flasher tab.
@@ -106,7 +106,17 @@ export class FlashRestoreFlow {
             }
 
             ConnectionSerial.getDevices().then((devices) => {
-                if (!restoreScheduled && devices && devices.includes(restorePort)) {
+                if (restoreScheduled || !devices) {
+                    return;
+                }
+                // Android names ports by USB device path (/dev/bus/usb/BBB/DDD), and the
+                // device number changes every time the FC re-enumerates. If the old path
+                // is gone, take the only serial device present.
+                if (isAndroid && !devices.includes(restorePort) && devices.length === 1) {
+                    console.log('Restore port ' + restorePort + ' is gone, using ' + devices[0]);
+                    restorePort = devices[0];
+                }
+                if (devices.includes(restorePort)) {
                     restoreScheduled = true;
                     clearInterval(portPollInterval);
                     $overlayStatus.text(i18n.getMessage('backupRestoreStatusConnecting'));

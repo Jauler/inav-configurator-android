@@ -32,7 +32,15 @@ const serial = {
         return new Promise(resolve => {
             try {
                 var openPortResolved = false;
-                this._serialport = new SerialPortStream({binding, path: path, baudRate: options.bitrate, autoOpen: true});
+                this._serialport = new SerialPortStream({
+                    binding,
+                    path: path,
+                    baudRate: options.bitrate,
+                    // The STM32 UART bootloader (js/protocols/stm32.js) needs 8E1.
+                    parity: options.parityBit || 'none',
+                    stopBits: options.stopBits === 'two' ? 2 : 1,
+                    autoOpen: true,
+                });
                 this._serialport.on('error', error => {
                     console.log('Serial port error:', error.message);
                     if (!window.isDestroyed()) {
