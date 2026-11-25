@@ -53,6 +53,7 @@ import cliTab from './../tabs/cli';
 import searchTab from './../tabs/search';
 import dialog from './dialog'
 import platform, { isAndroid } from './platform';
+import mobileNav from './mobileNav';
 
 window.$ = $;
 
@@ -291,6 +292,9 @@ $(function() {
         });
 
         $('#tabs ul.mode-disconnected li a:first').trigger( "click" );
+
+        // Drawer navigation for the compact (phone) layout
+        mobileNav.init();
 
         // Accordion Navigation Groups
         $('.group-header').on('click', function(e) {

@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 
+import androidx.activity.OnBackPressedCallback;
+
 import com.getcapacitor.BridgeActivity;
 import com.inavflight.configurator.file.InavFilePlugin;
 import com.inavflight.configurator.net.InavTcpPlugin;
@@ -29,6 +31,31 @@ public class MainActivity extends BridgeActivity {
         }
 
         super.onCreate(savedInstanceState);
+
+        // Back button/gesture: let the web UI consume it first (it closes the navigation
+        // drawer of the phone layout, see js/mobileNav.js), otherwise behave as usual.
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (bridge == null || bridge.getWebView() == null) {
+                    fallBackToDefault();
+                    return;
+                }
+                bridge.getWebView().evaluateJavascript(
+                    "typeof window.inavHandleBackButton === 'function' && window.inavHandleBackButton() === true",
+                    consumed -> {
+                        if (!"true".equals(consumed)) {
+                            fallBackToDefault();
+                        }
+                    });
+            }
+
+            private void fallBackToDefault() {
+                setEnabled(false);
+                getOnBackPressedDispatcher().onBackPressed();
+                setEnabled(true);
+            }
+        });
     }
 
     @Override
