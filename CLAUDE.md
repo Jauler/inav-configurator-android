@@ -116,6 +116,23 @@ functionality to both** (and to `preload.js`/`main.js`).
 - Files picked through the Android file picker are handed to callers as pseudo paths
   `saf://<n>/<display name>` (mapped back to `content://` URIs in `capacitor.js`).
 - Not supported on Android yet: BLE, local SITL/demo mode.
+- Orientation follows the device (`android:screenOrientation="fullUser"`: auto-rotate,
+  honouring the system rotation lock). The activity handles the configuration change
+  itself, so rotating does not reload the WebView.
+- Phone layout: `src/css/mobile.css` applies when the window is narrower than 900px or
+  shorter than 520px. It is scoped to `html.platform-android` (set by `js/mobileNav.js`),
+  collapses the header into a wrapping tool bar and turns the tab list into a drawer
+  opened by `#nav-toggle`. The page is a flex column there, so tab styles must not
+  depend on the 110px desktop header. Elements that scripts show/hide with jQuery
+  (`#portsinput`, `#sensor-status`, ...) must keep their default `display` in that file:
+  jQuery restores the value it saw when hiding, which would leak into the other layout
+  after a rotation.
+- Back button: `MainActivity` only intercepts back while `js/mobileNav.js` asks it to
+  (`platform.setBackIntercept`, via `InavBackPlugin`): drawer or options window open,
+  a `<dialog>`/jBox modal shown, or connected to an FC. Then it calls
+  `window.inavHandleBackButton()`, which closes the drawer/options window, ignores the
+  press under a modal, or asks before leaving while connected
+  (`platform.performDefaultBack`). Otherwise back goes straight to Android.
 - Requires JDK 21 and Android SDK 36 (Capacitor 8).
 
 ```bash

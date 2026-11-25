@@ -1,0 +1,710 @@
+/*
+ * Compact (phone) layout for the Android app.
+ *
+ * Applies when the window is narrow (phones and small tablets in portrait) or short
+ * (phones in landscape). Every rule is scoped to .platform-android, which
+ * js/mobileNav.js sets on <html>, so the desktop app is not affected.
+ *
+ *  - the page becomes a flex column, so nothing depends on a fixed header height,
+ *  - the header collapses into a wrapping tool bar,
+ *  - the tab list becomes an off-canvas drawer opened by #nav-toggle.
+ *
+ * Elements that the scripts show and hide with jQuery (#portsinput, #sensor-status,
+ * #profiles_wrapper_global, ...) keep their default `display` here: jQuery restores
+ * the value it saw when hiding, which would otherwise leak one layout's value into
+ * the other when the device is rotated in between.
+ *
+ * No flex `gap`, `inset` or `:is()`: the build targets the Android 11 WebView (Chrome 83).
+ */
+
+#nav-toggle,
+#nav-backdrop {
+    display: none;
+}
+
+@media (max-width: 899px), (max-height: 519px) {
+
+    /* ---- Page skeleton ---------------------------------------------------- */
+
+    .platform-android #main-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .platform-android #main-wrapper > .clear-both {
+        display: none;
+    }
+
+    .platform-android #log {
+        flex: none;
+    }
+
+    .platform-android #scrollicon {
+        display: none;
+    }
+
+    /* The last log line runs under the switch on a narrow screen */
+    .platform-android .logswitch {
+        right: 0;
+        padding: 3px 10px;
+        background-color: #242424;
+    }
+
+    .platform-android #content,
+    .platform-android #content.logopen,
+    .platform-android #view-groundstation {
+        flex: 1 1 0;
+        min-height: 0;
+        height: auto;
+    }
+
+    /* Tabs that are wider than the screen can be panned instead of being cut off */
+    .platform-android #content {
+        overflow-x: auto;
+    }
+
+    .platform-android #status-bar {
+        position: static;
+        flex: none;
+        width: auto;
+        overflow-x: auto;
+    }
+
+    .platform-android #status-bar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .platform-android #status-bar > div {
+        flex: 0 0 auto;
+        overflow: visible;
+    }
+
+    /* ---- Header ----------------------------------------------------------- */
+
+    .platform-android .headerbar {
+        flex: none;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        box-sizing: border-box;
+        height: auto;
+        min-height: 48px;
+        padding: 1px 4px;
+    }
+
+    /* Let the children of these wrappers take part in the header's flex layout */
+    .platform-android #port-picker,
+    .platform-android .header-wrapper {
+        display: contents;
+    }
+
+    .platform-android #nav-toggle {
+        order: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 40px;
+        margin: 3px 0;
+        border-radius: 4px;
+        color: #ddd;
+    }
+
+    /* Ground station mode hides the tab list (js/groundstation.js) */
+    .platform-android.groundstation-active #nav-toggle {
+        display: none;
+    }
+
+    .platform-android #nav-toggle:active {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .platform-android #logo {
+        order: 2;
+        position: static;
+        float: none;
+        width: 104px;
+        height: 30px;
+        margin: 3px 4px;
+        /* The artwork only fills the left third of this wide image */
+        background-position: left center;
+        background-size: auto 100%;
+    }
+
+    .platform-android #logo .logo_text,
+    .platform-android #logo .logo_text_firmware {
+        display: none;
+    }
+
+    /* Takes the room that is left, so a long port row wraps inside it instead of
+       pushing the connect button onto a second line */
+    .platform-android #portsinput {
+        order: 3;
+        flex: 1 1 0;
+        min-width: 0;
+        float: none;
+        width: auto;
+        margin: 0;
+    }
+
+    .platform-android #portsinput .portsinput__row {
+        display: inline;
+    }
+
+    .platform-android #portsinput .portsinput__top-element {
+        width: auto;
+        margin: 3px 4px;
+        vertical-align: middle;
+    }
+
+    .platform-android #portsinput .portsinput__top-element--port-override {
+        top: 0;
+        height: 32px;
+        line-height: 30px;
+        padding: 0 6px;
+        box-sizing: border-box;
+    }
+
+    .platform-android #port-override {
+        height: 24px;
+        font-size: 0.875rem;
+    }
+
+    /* Selects in the header: tall enough to hit with a finger */
+    .platform-android .headerbar .dropdown {
+        box-sizing: border-box;
+        height: 32px;
+        margin-bottom: 0;
+    }
+
+    .platform-android .headerbar .dropdown:before,
+    .platform-android .headerbar .dropdown:after {
+        top: 13px;
+    }
+
+    .platform-android .headerbar .dropdown-select,
+    .platform-android .headerbar .dropdown-select:focus {
+        width: 100%;
+        height: 30px;
+        padding: 0 22px 0 8px;
+        font-size: 0.875rem;
+        line-height: 30px;
+    }
+
+    .platform-android #portsinput .dropdown {
+        width: 136px;
+    }
+
+    .platform-android #sensor-status,
+    .platform-android #quad-status_wrapper {
+        float: none;
+        flex: none;
+        margin: 3px 6px;
+        zoom: 0.62;
+    }
+
+    .platform-android #sensor-status {
+        order: 4;
+    }
+
+    .platform-android #quad-status_wrapper {
+        order: 5;
+    }
+
+    .platform-android #profiles_wrapper_global {
+        order: 6;
+        flex: 1 1 150px;
+        float: none;
+        width: auto;
+        height: auto;
+        min-width: 0;
+        margin: 3px 1px;
+    }
+
+    .platform-android #profiles_wrapper_global::after {
+        content: "";
+        display: block;
+        clear: both;
+    }
+
+    .platform-android #profile_change,
+    .platform-android #mixer_profile_change,
+    .platform-android #battery_profile_change {
+        float: left;
+        box-sizing: border-box;
+        width: 33.33%;
+        padding: 0 3px;
+    }
+
+    .platform-android #profiles_wrapper_global .dropdown {
+        display: block;
+        width: 100%;
+    }
+
+    .platform-android #profiles_wrapper_global .dropdown-select {
+        padding-left: 6px;
+        font-size: 0.8125rem;
+    }
+
+    .platform-android #dataflash_wrapper_global {
+        display: none !important;
+    }
+
+    .platform-android .connect_controls {
+        order: 8;
+        position: static;
+        float: none;
+        display: flex;
+        align-items: center;
+        width: auto;
+        height: auto;
+        margin: 3px 4px 3px auto;
+    }
+
+    .platform-android .connect_b {
+        float: none;
+        display: flex;
+    }
+
+    .platform-android .connect_b a.connect,
+    .platform-android .connect_b a.connect.active {
+        float: none;
+        display: block;
+        width: 38px;
+        height: 38px;
+        margin: 0;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 30px;
+    }
+
+    .platform-android .connect_state {
+        display: none;
+        float: none;
+        width: auto;
+        height: auto;
+        margin: 0 2px 0 8px;
+        font-size: 0.8125rem;
+    }
+
+    .platform-android #options {
+        order: 9;
+        float: none;
+        width: 40px;
+        height: 40px;
+        margin: 3px 0;
+        background-position: center;
+        background-size: 22px;
+        opacity: 0.6;
+    }
+
+    .platform-android #options-window {
+        top: 8px;
+        right: 8px;
+        left: 8px;
+        max-height: calc(100% - 16px);
+        box-sizing: border-box;
+    }
+
+    /* The window covers the gear that opened it, so its close button must be easy to hit */
+    .platform-android #optionsClose {
+        top: 4px;
+        right: 8px;
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        line-height: 36px;
+    }
+
+    /* ---- Tab list as a drawer --------------------------------------------- */
+
+    .platform-android .tab_container,
+    .platform-android .tab_container.logopen {
+        position: fixed;
+        z-index: 5000;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        float: none;
+        width: min(300px, 84vw);
+        height: auto;
+        box-shadow: 4px 0 16px rgba(0, 0, 0, 0.5);
+        overscroll-behavior: contain;
+        transform: translateX(-110%);
+        visibility: hidden;
+        transition: transform 0.22s ease, visibility 0s linear 0.22s;
+    }
+
+    .platform-android.nav-open .tab_container {
+        transform: none;
+        visibility: visible;
+        transition: transform 0.22s ease, visibility 0s;
+    }
+
+    .platform-android #nav-backdrop {
+        display: block;
+        position: fixed;
+        z-index: 4999;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background-color: rgba(0, 0, 0, 0.55);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.22s ease, visibility 0s linear 0.22s;
+    }
+
+    .platform-android.nav-open #nav-backdrop {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.22s ease, visibility 0s;
+    }
+
+    .platform-android #tabs::before {
+        content: "";
+        display: block;
+        height: 52px;
+        background: #262626 url("./../../images/light-wide-2.svg") no-repeat 16px center;
+        background-size: auto 28px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+    }
+
+    .platform-android #tabs li a {
+        height: auto;
+        padding: 13px 12px 13px 50px;
+        font-size: 0.9375rem;
+        line-height: 20px;
+        text-overflow: ellipsis;
+    }
+
+    .platform-android #tabs .group-items li a {
+        padding-left: 58px;
+    }
+
+    .platform-android #tabs .tabicon {
+        background-position: 16px center;
+        background-size: 20px;
+    }
+
+    .platform-android #tabs .group-items .tabicon {
+        background-position: 24px center;
+    }
+
+    /* On the desktop an expanded group hides its header; in the drawer it stays, so a
+       group can be collapsed again with a tap. */
+    .platform-android #tabs .group-header,
+    .platform-android #tabs .group-header.active {
+        min-height: 0;
+        padding: 13px 16px;
+        background-color: #2d2d2d;
+        border-top: solid 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .platform-android #tabs .group-title,
+    .platform-android #tabs .group-header.active .group-title {
+        display: inline;
+        font-size: 0.8125rem;
+    }
+
+    .platform-android #tabs .group-header.active .group-title {
+        color: #37a8db;
+    }
+
+    .platform-android #tabs .chevron,
+    .platform-android #tabs .group-header.active .chevron {
+        display: inline-block;
+        font-size: 0.875rem;
+    }
+
+    .platform-android #tabs .group-header.active .chevron {
+        transform: rotate(90deg);
+    }
+
+    .platform-android #tabs .nav-toggle-all a {
+        padding: 14px 12px;
+        font-size: 0.75rem;
+    }
+
+    .platform-android #tabs .nav-toggle-all .toggle-text {
+        display: inline;
+    }
+
+    /* ---- Tab content ------------------------------------------------------ */
+
+    /* The save/action bar takes the height its buttons need instead of a fixed strip.
+       The tab fills #content so that only the content above the bar scrolls and the
+       bar stays at the bottom, as on the desktop (where it is positioned absolutely). */
+    .platform-android .toolbar_fixed_bottom {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .platform-android .toolbar_fixed_bottom > .content_wrapper {
+        flex: 1 1 0;
+        min-height: 0;
+        height: auto;
+    }
+
+    .platform-android .toolbar_fixed_bottom > .content_toolbar {
+        position: static;
+        flex: none;
+        flex-wrap: wrap;
+    }
+
+    .platform-android .content_toolbar > div {
+        flex-wrap: wrap;
+    }
+
+    /* Status and Magnetometer tabs: on the desktop the 3D model box is absolutely
+       positioned and sized from the window (and, on the Magnetometer tab, from a
+       600px side column). Here it is part of the page flow with its own height. */
+    .platform-android .tab-setup .model-and-info {
+        float: none;
+    }
+
+    .platform-android .tab-setup #interactive_block,
+    .platform-android .tab-magnetometer #interactive_block {
+        min-height: 0;
+        position: relative;
+        width: 100%;
+        height: clamp(180px, 40vh, 420px);
+        box-sizing: border-box;
+    }
+
+    .platform-android .content_toolbar .btn a {
+        white-space: nowrap;
+    }
+
+    /* CLI: the output takes all the height that is left; its nine buttons scroll sideways */
+    .platform-android .tab-cli,
+    .platform-android .tab-cli .content_wrapper {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .platform-android .tab-cli .content_wrapper {
+        flex: 1 1 0;
+        min-height: 0;
+        height: auto;
+    }
+
+    .platform-android .tab-cli .note {
+        flex: none;
+        margin-bottom: 8px;
+    }
+
+    .platform-android .tab-cli .backdrop {
+        flex: 1 1 0;
+        min-height: 60px;
+        height: auto;
+        box-sizing: border-box;
+    }
+
+    .platform-android .tab-cli .content_toolbar {
+        flex: none;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        margin-top: 0;
+        overflow-x: auto;
+    }
+
+    .platform-android .tab-cli .content_toolbar > div {
+        flex: none;
+        flex-wrap: nowrap;
+        margin-right: 0;
+    }
+}
+
+/* ---- Phone in landscape: every pixel of height counts --------------------- */
+
+@media (max-height: 519px) {
+
+    .platform-android .tab-cli .note {
+        display: none;
+    }
+}
+
+/* ---- Phone in portrait ---------------------------------------------------- */
+
+@media (max-width: 699px) {
+
+    /* Row 1: menu, logo, connect, options. Everything else moves below it. */
+    .platform-android .headerbar::after {
+        content: "";
+        order: 5;
+        flex: 0 0 100%;
+        height: 0;
+    }
+
+    .platform-android .connect_controls {
+        order: 3;
+    }
+
+    .platform-android .connect_state {
+        display: block;
+    }
+
+    .platform-android #options {
+        order: 4;
+    }
+
+    .platform-android #portsinput {
+        order: 6;
+        flex: 1 1 100%;
+        text-align: left;
+    }
+
+    .platform-android #portsinput .portsinput__row {
+        text-align: left;
+    }
+
+    .platform-android #sensor-status {
+        order: 6;
+        zoom: 0.7;
+    }
+
+    .platform-android #quad-status_wrapper {
+        order: 7;
+        zoom: 0.7;
+    }
+
+    .platform-android #profiles_wrapper_global {
+        order: 8;
+        flex: 1 1 100%;
+    }
+
+    /* Multi-column tab layouts stack */
+    .platform-android .half,
+    .platform-android .third_left,
+    .platform-android .third_center,
+    .platform-android .third_right,
+    .platform-android .fourth,
+    .platform-android .threefourth_left,
+    .platform-android .threefourth_right,
+    .platform-android .twothird {
+        float: none;
+        display: block;
+        width: 100%;
+    }
+
+    .platform-android .content_wrapper {
+        padding: 10px;
+    }
+
+    /* The gutters between columns are not needed once the columns are stacked */
+    .platform-android .spacer_left,
+    .platform-android .spacer_right {
+        width: 100%;
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .platform-android .tab-setup .buttonarea,
+    .platform-android .tab-setup .setupinfo {
+        width: 100%;
+    }
+
+    .platform-android .subtab__header_label {
+        min-width: 0;
+        font-size: 0.9375rem;
+    }
+
+    /* Firmware flasher: each option above its description instead of side by side */
+    .platform-android .tab-firmware_flasher .cf_table,
+    .platform-android .tab-firmware_flasher .cf_table tbody,
+    .platform-android .tab-firmware_flasher .cf_table tr,
+    .platform-android .tab-firmware_flasher .cf_table td {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    .platform-android .tab-firmware_flasher .cf_table td:first-child {
+        border-bottom: 0;
+    }
+
+    .platform-android .tab-firmware_flasher .cf_table td:last-child {
+        text-align: left;
+    }
+
+    .platform-android .tab-firmware_flasher .options select,
+    .platform-android .tab-firmware_flasher .options .target_search {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .platform-android .tab-firmware_flasher .options #flash_manual_baud_rate {
+        width: auto;
+    }
+
+    /* Per-tab left/right column pairs */
+    .platform-android .tab-configuration .leftWrapper,
+    .platform-android .tab-configuration .rightWrapper,
+    .platform-android .tab-failsafe .leftWrapper,
+    .platform-android .tab-failsafe .rightWrapper,
+    .platform-android .tab-onboard_logging .leftWrapper,
+    .platform-android .tab-onboard_logging .rightWrapper,
+    .platform-android .tab-magnetometer-left-wrapper,
+    .platform-android .tab-magnetometer-right-wrapper,
+    .platform-android .tab-receiver .bars,
+    .platform-android .tab-receiver .tunings {
+        display: flow-root;
+        float: none;
+        width: auto;
+        margin-right: 0;
+        margin-left: 0;
+    }
+
+    /* Receiver tab: this column carries an inline left margin for the two-column layout */
+    .platform-android .tab-receiver .fc_column.half {
+        margin-left: 0 !important;
+    }
+
+    .platform-android .tab-receiver .curves {
+        float: none;
+        width: auto !important;
+    }
+
+    .platform-android .properties,
+    .platform-android .properties dl,
+    .platform-android .properties dd {
+        width: auto;
+    }
+
+    .platform-android dialog {
+        width: 90%;
+    }
+
+    /* Welcome tab */
+    .platform-android .tab-landing .content_top {
+        height: auto;
+        padding: 12px;
+    }
+
+    .platform-android .tab-landing .logowrapper {
+        width: auto;
+    }
+
+    .platform-android .tab-landing .inavLogo {
+        width: auto;
+        height: 70px;
+        background-size: contain;
+    }
+
+    .platform-android .tab-landing .content_mid .text1,
+    .platform-android .tab-landing .content_mid .text2 {
+        width: auto;
+    }
+
+    .platform-android #view-groundstation {
+        flex-direction: column;
+    }
+
+    .platform-android #groundstation-telemetry {
+        width: 100%;
+    }
+}
