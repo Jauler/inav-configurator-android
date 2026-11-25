@@ -111,6 +111,11 @@
         color: #ddd;
     }
 
+    /* Ground station mode hides the tab list (js/groundstation.js) */
+    .platform-android.groundstation-active #nav-toggle {
+        display: none;
+    }
+
     .platform-android #nav-toggle:active {
         background-color: rgba(255, 255, 255, 0.15);
     }

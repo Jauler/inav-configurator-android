@@ -17,6 +17,7 @@ import VectorLayer from 'ol/layer/Vector.js';
 import GUI from './gui';
 import ltmDecoder from './ltmDecoder';
 import interval from './intervals';
+import mobileNav from './mobileNav';
 import { globalSettings } from './globalSettings';
 import i18n from './localization';
 
@@ -61,6 +62,9 @@ const groundstation = (function () {
 
         privateScope.$viewport.find(".tab_container").hide();
         privateScope.$viewport.find('#content').hide();
+        // Lets the phone layout (src/css/mobile.css) hide its menu button and drawer
+        document.documentElement.classList.add('groundstation-active');
+        mobileNav.close();
         privateScope.$viewport.find('#status-bar').hide();
         privateScope.$viewport.find('#connectbutton a.connect_state').text(i18n.getMessage('disconnect'));
         privateScope.$viewport.find('#connectbutton a.connect').addClass('active');
@@ -143,6 +147,7 @@ const groundstation = (function () {
             privateScope.$gsViewport.hide();
         }
 
+        document.documentElement.classList.remove('groundstation-active');
         privateScope.activated = false;
         GUI.log(i18n.getMessage('gsDeactivated'));
     }

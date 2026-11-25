@@ -9,6 +9,8 @@
  */
 
 import { isAndroid } from './platform';
+import GUI from './gui';
+import CONFIGURATOR from './data_storage';
 
 const root = document.documentElement;
 
@@ -26,10 +28,21 @@ function setOpen(open) {
     $('#nav-toggle').attr('aria-expanded', open ? 'true' : 'false');
 }
 
-// The toggle is only displayed in the compact layout (see mobile.css).
+// The toggle is only displayed in the compact layout, and not while the ground station
+// hides the tab list (see mobile.css).
 function isCompactLayout() {
     const toggle = document.getElementById('nav-toggle');
     return !!toggle && window.getComputedStyle(toggle).display !== 'none';
+}
+
+// The tab click handler in configurator_main.js runs before this delegated one and may
+// refuse the switch (not connected, operation in progress, tab not supported, unsaved
+// changes kept). Only close the drawer when the switch is actually going ahead, so a
+// refusal stays visible next to the drawer and its log message.
+function tabSwitchAccepted($li) {
+    return GUI.tab_switch_in_progress
+        || $li.hasClass('active')
+        || CONFIGURATOR.cliActive; // leaving the CLI switches once it has exited
 }
 
 const mobileNav = {
@@ -43,10 +56,12 @@ const mobileNav = {
             setOpen(false);
         });
 
-        // Picking a tab closes the drawer. Group headers and the expand-all toggle are
-        // not tab links, so the drawer stays open while groups are being browsed.
+        // Group headers and the expand-all toggle are not tab links, so the drawer
+        // stays open while groups are being browsed.
         $('#tabs').on('click', 'li[class*="tab_"] > a', function () {
-            setOpen(false);
+            if (tabSwitchAccepted($(this).parent())) {
+                setOpen(false);
+            }
         });
 
         $(document).on('keydown', function (e) {
@@ -74,7 +89,9 @@ const mobileNav = {
     },
 
     close() {
-        setOpen(false);
+        if (isOpen()) {
+            setOpen(false);
+        }
     },
 };
 
