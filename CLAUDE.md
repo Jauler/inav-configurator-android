@@ -127,8 +127,12 @@ functionality to both** (and to `preload.js`/`main.js`).
   (`#portsinput`, `#sensor-status`, ...) must keep their default `display` in that file:
   jQuery restores the value it saw when hiding, which would leak into the other layout
   after a rotation.
-- The Android back button calls `window.inavHandleBackButton()` first (closes the
-  drawer); when that returns `false` the default back action runs (`MainActivity`).
+- Back button: `MainActivity` only intercepts back while `js/mobileNav.js` asks it to
+  (`platform.setBackIntercept`, via `InavBackPlugin`): drawer or options window open,
+  a `<dialog>`/jBox modal shown, or connected to an FC. Then it calls
+  `window.inavHandleBackButton()`, which closes the drawer/options window, ignores the
+  press under a modal, or asks before leaving while connected
+  (`platform.performDefaultBack`). Otherwise back goes straight to Android.
 - Requires JDK 21 and Android SDK 36 (Capacitor 8).
 
 ```bash

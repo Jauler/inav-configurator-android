@@ -60,6 +60,9 @@
     "navMenu": {
         "message": "Menu"
     },
+    "androidBackLeaveWhileConnected": {
+        "message": "Leave INAV Configurator? The connection to the flight controller may be closed."
+    },
     "options_unit_type": {
         "message": "Set how the units render on the configurator only"
     },

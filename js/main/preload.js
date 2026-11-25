@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   appGetPath: (name) => ipcRenderer.sendSync('appGetPath', name),
   appGetVersion: () => ipcRenderer.sendSync('appGetVersion'),
   appGetLocale: () => ipcRenderer.sendSync('appGetLocale'),
+  // Android back button handling (js/platform/capacitor.js); desktop has no back button.
+  setBackIntercept: () => {},
+  performDefaultBack: () => {},
   showOpenDialog: (options) => ipcRenderer.invoke('dialog.showOpenDialog', options),
   showSaveDialog: (options) => ipcRenderer.invoke('dialog.showSaveDialog', options),
   alertDialog: (message) => ipcRenderer.sendSync('dialog.alert', message), // TODO: still blocks renderer event loop — needs same async fix (invoke/handle) as confirm; see ipcMain.on('dialog.alert') in main.js

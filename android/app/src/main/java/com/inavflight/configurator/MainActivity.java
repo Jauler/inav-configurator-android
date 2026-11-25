@@ -21,6 +21,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(InavUdpPlugin.class);
         registerPlugin(InavFilePlugin.class);
         registerPlugin(InavUsbPlugin.class);
+        registerPlugin(InavBackPlugin.class);
 
         // When launched by a USB attach intent (the "open INAV Configurator when this
         // device is connected" prompt), replace it with a plain launcher intent before
@@ -32,30 +33,41 @@ public class MainActivity extends BridgeActivity {
 
         super.onCreate(savedInstanceState);
 
-        // Back button/gesture: let the web UI consume it first (it closes the navigation
-        // drawer of the phone layout, see js/mobileNav.js), otherwise behave as usual.
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                if (bridge == null || bridge.getWebView() == null) {
-                    fallBackToDefault();
-                    return;
-                }
-                bridge.getWebView().evaluateJavascript(
-                    "typeof window.inavHandleBackButton === 'function' && window.inavHandleBackButton() === true",
-                    consumed -> {
-                        if (!"true".equals(consumed)) {
-                            fallBackToDefault();
-                        }
-                    });
-            }
+        // Back button/gesture. The callback is only enabled while the web UI has
+        // something to do with it (js/mobileNav.js: drawer or options window open, a
+        // modal dialog shown, or connected to an FC), so ordinary presses never wait for
+        // the WebView and predictive back keeps working.
+        getOnBackPressedDispatcher().addCallback(this, backCallback);
+    }
 
-            private void fallBackToDefault() {
-                setEnabled(false);
-                getOnBackPressedDispatcher().onBackPressed();
-                setEnabled(true);
+    private final OnBackPressedCallback backCallback = new OnBackPressedCallback(false) {
+        @Override
+        public void handleOnBackPressed() {
+            if (bridge == null || bridge.getWebView() == null) {
+                performDefaultBack();
+                return;
             }
-        });
+            bridge.getWebView().evaluateJavascript(
+                "typeof window.inavHandleBackButton === 'function' && window.inavHandleBackButton() === true",
+                consumed -> {
+                    if (!"true".equals(consumed)) {
+                        performDefaultBack();
+                    }
+                });
+        }
+    };
+
+    /** Called by InavBackPlugin on the UI thread. */
+    void setBackIntercept(boolean enabled) {
+        backCallback.setEnabled(enabled);
+    }
+
+    /** Runs the default back action (leave/background the app), skipping our callback. */
+    void performDefaultBack() {
+        boolean wasEnabled = backCallback.isEnabled();
+        backCallback.setEnabled(false);
+        getOnBackPressedDispatcher().onBackPressed();
+        backCallback.setEnabled(wasEnabled);
     }
 
     @Override

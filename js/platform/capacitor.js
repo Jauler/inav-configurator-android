@@ -21,6 +21,7 @@ const Tcp = registerPlugin('InavTcp');
 const Udp = registerPlugin('InavUdp');
 const Files = registerPlugin('InavFile');
 const Usb = registerPlugin('InavUsb');
+const Back = registerPlugin('InavBack');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -482,6 +483,14 @@ const capacitorPlatform = {
 
     // HTTP -----------------------------------------------------------------
     httpGetText: httpGetText,
+
+    // Back button (see js/mobileNav.js and MainActivity) ----------------------
+    setBackIntercept: (enabled) => {
+        Back.setIntercept({ enabled: !!enabled }).catch((err) => console.warn('setBackIntercept failed:', errorMessage(err)));
+    },
+    performDefaultBack: () => {
+        Back.performDefaultBack().catch((err) => console.warn('performDefaultBack failed:', errorMessage(err)));
+    },
 
     // Settings / app info --------------------------------------------------
     storeGet: storeGet,
