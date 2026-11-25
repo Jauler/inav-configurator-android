@@ -163,7 +163,7 @@
 
     .platform-android #port-override {
         height: 24px;
-        font-size: 14px;
+        font-size: 0.875rem;
     }
 
     /* Selects in the header: tall enough to hit with a finger */
@@ -183,7 +183,7 @@
         width: 100%;
         height: 30px;
         padding: 0 22px 0 8px;
-        font-size: 14px;
+        font-size: 0.875rem;
         line-height: 30px;
     }
 
@@ -239,7 +239,7 @@
 
     .platform-android #profiles_wrapper_global .dropdown-select {
         padding-left: 6px;
-        font-size: 13px;
+        font-size: 0.8125rem;
     }
 
     .platform-android #dataflash_wrapper_global {
@@ -280,7 +280,7 @@
         width: auto;
         height: auto;
         margin: 0 2px 0 8px;
-        font-size: 13px;
+        font-size: 0.8125rem;
     }
 
     .platform-android #options {
@@ -308,7 +308,7 @@
         right: 8px;
         width: 36px;
         height: 36px;
-        font-size: 16px;
+        font-size: 1rem;
         line-height: 36px;
     }
 
@@ -369,7 +369,7 @@
     .platform-android #tabs li a {
         height: auto;
         padding: 13px 12px 13px 50px;
-        font-size: 15px;
+        font-size: 0.9375rem;
         line-height: 20px;
         text-overflow: ellipsis;
     }
@@ -400,7 +400,7 @@
     .platform-android #tabs .group-title,
     .platform-android #tabs .group-header.active .group-title {
         display: inline;
-        font-size: 13px;
+        font-size: 0.8125rem;
     }
 
     .platform-android #tabs .group-header.active .group-title {
@@ -410,7 +410,7 @@
     .platform-android #tabs .chevron,
     .platform-android #tabs .group-header.active .chevron {
         display: inline-block;
-        font-size: 14px;
+        font-size: 0.875rem;
     }
 
     .platform-android #tabs .group-header.active .chevron {
@@ -419,7 +419,7 @@
 
     .platform-android #tabs .nav-toggle-all a {
         padding: 14px 12px;
-        font-size: 12px;
+        font-size: 0.75rem;
     }
 
     .platform-android #tabs .nav-toggle-all .toggle-text {
@@ -428,10 +428,13 @@
 
     /* ---- Tab content ------------------------------------------------------ */
 
-    /* The save/action bar takes the height its buttons need instead of a fixed strip */
+    /* The save/action bar takes the height its buttons need instead of a fixed strip.
+       The tab fills #content so that only the content above the bar scrolls and the
+       bar stays at the bottom, as on the desktop (where it is positioned absolutely). */
     .platform-android .toolbar_fixed_bottom {
         display: flex;
         flex-direction: column;
+        height: 100%;
     }
 
     .platform-android .toolbar_fixed_bottom > .content_wrapper {
@@ -450,13 +453,16 @@
         flex-wrap: wrap;
     }
 
-    /* Status tab: on the desktop the 3D model box is absolutely positioned and sized
-       from the window height. Here it is part of the page flow with its own height. */
+    /* Status and Magnetometer tabs: on the desktop the 3D model box is absolutely
+       positioned and sized from the window (and, on the Magnetometer tab, from a
+       600px side column). Here it is part of the page flow with its own height. */
     .platform-android .tab-setup .model-and-info {
         float: none;
     }
 
-    .platform-android #interactive_block {
+    .platform-android .tab-setup #interactive_block,
+    .platform-android .tab-magnetometer #interactive_block {
+        min-height: 0;
         position: relative;
         width: 100%;
         height: clamp(180px, 40vh, 420px);
@@ -598,7 +604,7 @@
 
     .platform-android .subtab__header_label {
         min-width: 0;
-        font-size: 15px;
+        font-size: 0.9375rem;
     }
 
     /* Firmware flasher: each option above its description instead of side by side */
